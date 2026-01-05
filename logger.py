@@ -97,6 +97,9 @@ class Logger:
         file_handler.setFormatter(file_formatter)
         file_handler.setLevel(logging.DEBUG)
 
+        # 关闭缓冲，实时写入
+        file_handler.stream.reconfigure(line_buffering=True)
+
         self.logger.addHandler(file_handler)
 
     def _add_console_handler(self):
