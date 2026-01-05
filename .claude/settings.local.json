@@ -3,7 +3,8 @@
     "allow": [
       "Bash(python:*)",
       "Bash(timeout:*)",
-      "Bash(get-output:*)"
+      "Bash(get-output:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

@@ -31,6 +31,7 @@ from chinese_converter import (
     number_to_chinese,
     price_to_chinese
 )
+from logger import Logger
 
 
 # ========== 数据结构 ==========
@@ -44,6 +45,9 @@ class ConfigurableMonitor:
     """可配置的实时价格监控器"""
 
     def __init__(self):
+        # 初始化日志器
+        self.logger = Logger(name="monitor", keep_hours=24)
+
         # 计算最大历史深度
         self.max_window = max(rule["window_minutes"] for rule in ALERT_RULES)
         self.max_history = self.max_window + 1
@@ -67,7 +71,7 @@ class ConfigurableMonitor:
 
     def _setup_rules(self):
         """根据配置文件设置告警规则"""
-        print("\n📋 加载告警规则:")
+        self.logger.info("📋 加载告警规则:")
 
         for rule_config in ALERT_RULES:
             name = rule_config["name"]
@@ -91,7 +95,7 @@ class ConfigurableMonitor:
             )
 
             self.alert_generator.add_rule(rule)
-            print(f"  ✓ {name} ({window}分钟, {direction}, {priority})")
+            self.logger.info(f"  ✓ {name} ({window}分钟, {direction}, {priority})")
 
     def _get_or_create_history(self, symbol: str) -> deque:
         """获取或创建币种的价格历史队列"""
@@ -198,8 +202,11 @@ class ConfigurableMonitor:
 
                         if success:
                             alerts_sent += 1
+                            self.logger.info(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name}")
                             if VERBOSE:
-                                print(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name}")
+                                self.logger.debug(f"告警详情: {message_json}")
+                        else:
+                            self.logger.error(f"[ALERT FAILED] {symbol}: {change_percent:+.2f}% - {rule_name}")
 
         return alerts_sent
 
@@ -236,15 +243,19 @@ class ConfigurableMonitor:
             sampled = self._sample_prices()
 
             # 检查告警
-            alerts = self._check_alerts()
+            try:
+                alerts = self._check_alerts()
+            except Exception as e:
+                self.logger.exception(f"检查告警时发生异常: {e}")
+                alerts = 0
 
             # 状态输出
             history_len = 0
             if self.price_history:
                 history_len = len(next(iter(self.price_history.values())))
 
-            print(f"\n[{now_str}] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            print(f"  📊 采样: {sampled} 个币种 | 历史: {history_len}/{self.max_history} 分钟")
+            self.logger.info(f"\n[{now_str}] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            self.logger.info(f"  📊 采样: {sampled} 个币种 | 历史: {history_len}/{self.max_history} 分钟")
 
             # 显示涨跌幅 Top N
             if history_len >= self.max_window + 1:
@@ -252,7 +263,7 @@ class ConfigurableMonitor:
                 min_window = min(rule["window_minutes"] for rule in ALERT_RULES)
                 top_movers = self._get_top_movers(min_window, TOP_N_DISPLAY)
                 if top_movers:
-                    print(f"  🔥 {min_window}分钟涨跌幅 Top {TOP_N_DISPLAY}:")
+                    self.logger.info(f"  🔥 {min_window}分钟涨跌幅 Top {TOP_N_DISPLAY}:")
                     for symbol, change in top_movers:
                         emoji = "🚀" if change > 0 else "📉"
                         # 检查是否超过任何阈值
@@ -263,24 +274,24 @@ class ConfigurableMonitor:
                                     alert_emoji = "⚠️"
                                 elif rule["direction"] == "down" and change < -rule["threshold"]:
                                     alert_emoji = "⚠️"
-                        print(f"      {emoji} {symbol}: {change:+.2f}% {alert_emoji}")
+                        self.logger.info(f"      {emoji} {symbol}: {change:+.2f}% {alert_emoji}")
 
                 # 告警状态
                 if alerts > 0:
-                    print(f"  🚨 已发送 {alerts} 条告警")
+                    self.logger.info(f"  🚨 已发送 {alerts} 条告警")
                 else:
-                    print(f"  ✅ 暂无币种触发告警阈值")
+                    self.logger.info(f"  ✅ 暂无币种触发告警阈值")
             else:
                 remaining = self.max_window + 1 - history_len
-                print(f"  ⏳ 等待历史数据积累中... (还需 {remaining} 分钟)")
+                self.logger.info(f"  ⏳ 等待历史数据积累中... (还需 {remaining} 分钟)")
 
     async def _websocket_loop(self):
         """WebSocket 连接循环"""
         while self.running:
             try:
-                print(f"[WS] 正在连接 Binance WebSocket...")
+                self.logger.info("[WS] 正在连接 Binance WebSocket...")
                 async with websockets.connect(WS_URL, ping_interval=20) as ws:
-                    print(f"[WS] 连接成功！")
+                    self.logger.info("[WS] 连接成功！")
 
                     async for message in ws:
                         if not self.running:
@@ -289,24 +300,26 @@ class ConfigurableMonitor:
                         try:
                             data = json.loads(message)
                             await self._handle_message(data)
-                        except json.JSONDecodeError:
-                            pass
+                        except json.JSONDecodeError as e:
+                            self.logger.debug(f"[WS] JSON 解析失败: {e}")
+                        except Exception as e:
+                            self.logger.error(f"[WS] 处理消息时发生异常: {e}")
 
             except Exception as e:
-                print(f"[WS] 连接断开: {e}")
+                self.logger.error(f"[WS] 连接断开: {e}")
                 if self.running:
-                    print(f"[WS] 5秒后重连...")
+                    self.logger.info("[WS] 5秒后重连...")
                     await asyncio.sleep(5)
 
     async def run(self):
         """启动监控"""
-        print("=" * 60)
-        print("🔍 实时价格监控器启动")
-        print(f"   采样间隔: {SAMPLE_INTERVAL} 秒")
-        print(f"   最大时间窗口: {self.max_window} 分钟")
-        print(f"   告警冷却: {ALERT_COOLDOWN} 秒")
-        print(f"   规则数量: {len(ALERT_RULES)}")
-        print("=" * 60)
+        self.logger.info("=" * 60)
+        self.logger.info("🔍 实时价格监控器启动")
+        self.logger.info(f"   采样间隔: {SAMPLE_INTERVAL} 秒")
+        self.logger.info(f"   最大时间窗口: {self.max_window} 分钟")
+        self.logger.info(f"   告警冷却: {ALERT_COOLDOWN} 秒")
+        self.logger.info(f"   规则数量: {len(ALERT_RULES)}")
+        self.logger.info("=" * 60)
 
         self.running = True
 
@@ -317,10 +330,12 @@ class ConfigurableMonitor:
                 self._sample_loop()
             )
         except KeyboardInterrupt:
-            pass
+            self.logger.info("收到退出信号")
+        except Exception as e:
+            self.logger.exception(f"监控运行时发生异常: {e}")
         finally:
             self.running = False
-            print("\n[INFO] 监控已停止")
+            self.logger.info("[INFO] 监控已停止")
 
 
 def main():
@@ -329,6 +344,8 @@ def main():
         asyncio.run(monitor.run())
     except KeyboardInterrupt:
         print("\n[INFO] 收到退出信号")
+    except Exception as e:
+        print(f"\n[ERROR] 程序异常退出: {e}")
 
 
 if __name__ == "__main__":
