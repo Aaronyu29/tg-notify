@@ -122,12 +122,12 @@ class AlertGenerator:
 
         return results
 
-    def send_alert(self, message: str) -> bool:
+    def send_alert(self, message) -> bool:
         """
         发送告警到 FWAlert
 
         Args:
-            message: 告警消息
+            message: 告警消息 (str 或 dict)
 
         Returns:
             是否发送成功
@@ -137,9 +137,21 @@ class AlertGenerator:
             return False
 
         try:
+            # 如果 message 是字符串，尝试解析为 JSON
+            if isinstance(message, str):
+                try:
+                    import json
+                    payload = json.loads(message)
+                except json.JSONDecodeError:
+                    # 如果不是 JSON，则包装为 {"message": ...}
+                    payload = {"message": message}
+            else:
+                # 如果已经是 dict，直接使用
+                payload = message
+
             response = requests.post(
                 self.fwalert_url,
-                json={"message": message},
+                json=payload,
                 headers={"Content-Type": "application/json"},
                 timeout=10
             )

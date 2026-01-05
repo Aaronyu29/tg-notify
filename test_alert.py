@@ -27,9 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from alert_generator import AlertGenerator
 from chinese_converter import (
     number_to_chinese,
-    price_to_chinese,
-    time_to_chinese,
-    window_to_chinese
+    price_to_chinese
 )
 
 # ========== 配置 ==========
@@ -131,37 +129,33 @@ class TestMonitor:
     def _send_alert(self, symbol: str, change_percent: float, current_price: float,
                     old_price: float, alert_type: str):
         """发送告警"""
-        now_str = datetime.now().strftime("%H:%M:%S")
-
-        # 转换为中文
+        # 转换数字为中文
         change_percent_chinese = number_to_chinese(change_percent, is_percent=True)
         price_chinese = price_to_chinese(current_price)
         old_price_chinese = price_to_chinese(old_price)
-        time_chinese = time_to_chinese(now_str)
-        window_chinese = window_to_chinese(WINDOW_MINUTES)
 
-        # 生成消息
-        if alert_type == "top_gainer":
-            title = f"{symbol} {window_chinese}内涨幅最高"
-        else:
-            title = f"{symbol} {window_chinese}内跌幅最大"
+        # 移除 USDT 后缀
+        symbol_short = symbol.replace("USDT", "")
 
-        message = (
-            f"{title}\n"
-            f"涨跌幅: {change_percent_chinese}\n"
-            f"当前价格: {price_chinese}\n"
-            f"{window_chinese}前: {old_price_chinese}\n"
-            f"检测时间: {time_chinese}"
-        )
+        # 构建精简的 JSON 消息
+        message = {
+            "upOrDown": change_percent_chinese,
+            "symbol": symbol_short,
+            "currentPrice": price_chinese,
+            "beforePrice": old_price_chinese
+        }
+
+        # 转换为 JSON 字符串并发送
+        message_json = json.dumps(message, ensure_ascii=False)
 
         print(f"\n{'='*60}")
-        print(f"发送告警: {alert_type}")
+        print(f"发送告警: {alert_type} - {symbol}")
         print(f"{'='*60}")
-        print(message)
+        print(message_json)
         print(f"{'='*60}")
 
         # 发送到 FWAlert
-        success = self.alert_generator.send_alert(message)
+        success = self.alert_generator.send_alert(message_json)
 
         if success:
             print(f"✓ 告警发送成功: {symbol} ({change_percent:+.2f}%)")
