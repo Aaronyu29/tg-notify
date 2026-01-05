@@ -29,10 +29,7 @@ from monitor_config import (
 )
 from chinese_converter import (
     number_to_chinese,
-    price_to_chinese,
-    time_to_chinese,
-    window_to_chinese,
-    threshold_to_chinese
+    price_to_chinese
 )
 
 
@@ -82,26 +79,14 @@ class ConfigurableMonitor:
             # 根据方向创建条件
             if direction == "up":
                 condition = lambda data, t=threshold: data.get("change_percent", 0) > t
-                direction_text = "暴涨"
             else:  # down
                 condition = lambda data, t=threshold: data.get("change_percent", 0) < -t
-                direction_text = "暴跌"
 
-            # 转换为中文
-            window_chinese = window_to_chinese(window)
-            threshold_chinese = threshold_to_chinese(threshold)
-
-            # 创建规则 - 使用中文格式，无表情符号
+            # 创建规则 - 不需要 message_template，我们会直接发送 JSON
             rule = AlertRule(
                 name=name,
                 condition=condition,
-                message_template=(
-                    f"{{symbol}} {window_chinese}内{direction_text}{threshold_chinese}\n"
-                    f"涨跌幅: {{change_percent_chinese}}\n"
-                    f"当前价格: {{price_chinese}}\n"
-                    f"{window_chinese}前: {{old_price_chinese}}\n"
-                    f"检测时间: {{time_chinese}}"
-                ),
+                message_template="",  # 不使用模板
                 priority=priority
             )
 
@@ -170,7 +155,6 @@ class ConfigurableMonitor:
     def _check_alerts(self):
         """检查所有币种和规则，触发告警"""
         alerts_sent = 0
-        now_str = datetime.now().strftime("%H:%M:%S")
 
         # 按规则检查
         for rule_config in ALERT_RULES:
@@ -188,27 +172,34 @@ class ConfigurableMonitor:
                 if not self._can_alert(symbol, rule_name):
                     continue
 
-                # 准备数据 - 添加中文格式
+                # 准备数据用于规则检查
                 data = {
                     "symbol": symbol,
                     "change_percent": change_percent,
-                    "change_percent_chinese": number_to_chinese(change_percent, is_percent=True),
                     "price": current_price,
-                    "price_chinese": price_to_chinese(current_price),
-                    "old_price": old_price,
-                    "old_price_chinese": price_to_chinese(old_price),
-                    "time": now_str,
-                    "time_chinese": time_to_chinese(now_str)
+                    "old_price": old_price
                 }
 
-                # 使用 alert_generator 检查规则
-                results = self.alert_generator.check_and_alert(data)
+                # 检查规则是否触发
+                for rule in self.alert_generator.rules:
+                    if rule.name == rule_name and rule.check(data):
+                        # 构建精简的 JSON 消息
+                        symbol_short = symbol.replace("USDT", "")
+                        message = {
+                            "upOrDown": number_to_chinese(change_percent, is_percent=True),
+                            "symbol": symbol_short,
+                            "currentPrice": price_to_chinese(current_price),
+                            "beforePrice": price_to_chinese(old_price)
+                        }
 
-                if results["triggered_rules"]:
-                    alerts_sent += len(results["triggered_rules"])
-                    for rule in results["triggered_rules"]:
-                        if VERBOSE:
-                            print(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule['rule']}")
+                        # 转换为 JSON 字符串并发送
+                        message_json = json.dumps(message, ensure_ascii=False)
+                        success = self.alert_generator.send_alert(message_json)
+
+                        if success:
+                            alerts_sent += 1
+                            if VERBOSE:
+                                print(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name}")
 
         return alerts_sent
 
