@@ -26,6 +26,12 @@ class CoinGeckoClient:
         self.max_retries = 3  # 最大重试次数
         self.retry_delay = 5  # 重试延迟（秒）
 
+        # 配置代理
+        self.proxies = {
+            'http': 'http://localhost:7897',
+            'https': 'http://localhost:7897'
+        }
+
         # Symbol 映射：Binance symbol → CoinGecko ID
         # 这个映射需要维护，可以从 CoinGecko API 自动获取
         self.symbol_map = {
@@ -51,6 +57,91 @@ class CoinGeckoClient:
             "INJUSDT": "injective-protocol",
             # 可以继续添加更多...
         }
+
+        # 自动搜索缓存：{symbol: coingecko_id or None}
+        self.search_cache = {}
+        self.search_cache_file = "coingecko_symbol_cache.json"
+        self._load_search_cache()
+
+    def _load_search_cache(self):
+        """从文件加载搜索缓存"""
+        try:
+            import json
+            from pathlib import Path
+            cache_path = Path(__file__).parent / self.search_cache_file
+            if cache_path.exists():
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    self.search_cache = json.load(f)
+                self.logger.info(f"加载了 {len(self.search_cache)} 个币种的映射缓存")
+        except Exception as e:
+            self.logger.debug(f"加载搜索缓存失败: {e}")
+
+    def _save_search_cache(self):
+        """保存搜索缓存到文件"""
+        try:
+            import json
+            from pathlib import Path
+            cache_path = Path(__file__).parent / self.search_cache_file
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(self.search_cache, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            self.logger.debug(f"保存搜索缓存失败: {e}")
+
+    def _search_coin_id(self, symbol: str) -> Optional[str]:
+        """
+        搜索币种的 CoinGecko ID
+
+        Args:
+            symbol: Binance symbol，如 "BREVUSDT"
+
+        Returns:
+            CoinGecko ID 或 None
+        """
+        # 检查缓存
+        if symbol in self.search_cache:
+            return self.search_cache[symbol]
+
+        # 提取币种名称（去掉 USDT）
+        coin_symbol = symbol.replace("USDT", "").lower()
+
+        try:
+            # 限速等待
+            self._rate_limit_wait()
+
+            # 搜索币种
+            self.logger.debug(f"搜索币种: {coin_symbol}")
+            response = requests.get(
+                f"{self.base_url}/search",
+                params={"query": coin_symbol},
+                timeout=self.timeout,
+                proxies=self.proxies
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                coins = data.get("coins", [])
+
+                # 尝试精确匹配 symbol
+                for coin in coins:
+                    if coin.get("symbol", "").lower() == coin_symbol:
+                        coin_id = coin.get("id")
+                        self.logger.info(f"找到映射: {symbol} -> {coin_id}")
+                        self.search_cache[symbol] = coin_id
+                        self._save_search_cache()
+                        return coin_id
+
+                # 如果没有精确匹配，返回 None
+                self.logger.debug(f"未找到 {symbol} 的精确匹配")
+                self.search_cache[symbol] = None
+                self._save_search_cache()
+                return None
+            else:
+                self.logger.debug(f"搜索失败: {response.status_code}")
+                return None
+
+        except Exception as e:
+            self.logger.debug(f"搜索 {symbol} 失败: {e}")
+            return None
 
     def _rate_limit_wait(self):
         """
@@ -88,10 +179,23 @@ class CoinGeckoClient:
 
         # 转换为 CoinGecko IDs
         ids = []
+        unknown_symbols = []
+
         for symbol in symbols:
+            # 先查找预定义映射
             cg_id = self.symbol_map.get(symbol)
+
+            # 如果没有预定义映射，尝试自动搜索
+            if not cg_id:
+                cg_id = self._search_coin_id(symbol)
+
             if cg_id:
                 ids.append(cg_id)
+            else:
+                unknown_symbols.append(symbol)
+
+        if unknown_symbols and len(unknown_symbols) <= 10:
+            self.logger.debug(f"未找到映射的币种: {', '.join(unknown_symbols)}")
 
         if not ids:
             self.logger.warning("没有找到可映射的 CoinGecko ID")
@@ -114,22 +218,35 @@ class CoinGeckoClient:
                         "per_page": 250,
                         "sparkline": "false"
                     },
-                    timeout=self.timeout
+                    timeout=self.timeout,
+                    proxies=self.proxies
                 )
 
                 if response.status_code == 200:
                     data = response.json()
                     result = {}
 
+                    # 创建反向映射：CoinGecko ID → Binance symbol
+                    id_to_symbol = {}
+                    # 添加预定义映射
+                    for symbol, cg_id in self.symbol_map.items():
+                        if cg_id:
+                            id_to_symbol[cg_id] = symbol
+                    # 添加搜索缓存中的映射
+                    for symbol, cg_id in self.search_cache.items():
+                        if cg_id:
+                            id_to_symbol[cg_id] = symbol
+
                     for coin in data:
-                        # 反向映射：CoinGecko ID → Binance symbol
-                        for symbol, cg_id in self.symbol_map.items():
-                            if cg_id == coin["id"]:
-                                result[symbol] = {
-                                    "market_cap": coin.get("market_cap") or 0,
-                                    "fdv": coin.get("fully_diluted_valuation") or 0,
-                                    "volume_24h": coin.get("total_volume") or 0
-                                }
+                        coin_id = coin["id"]
+                        # 使用反向映射查找 symbol
+                        if coin_id in id_to_symbol:
+                            symbol = id_to_symbol[coin_id]
+                            result[symbol] = {
+                                "market_cap": coin.get("market_cap") or 0,
+                                "fdv": coin.get("fully_diluted_valuation") or 0,
+                                "volume_24h": coin.get("total_volume") or 0
+                            }
 
                     self.cache = result
                     self.last_update = now

@@ -288,31 +288,20 @@ class ConfigurableMonitor:
 
     def _calculate_window_volume(self, symbol: str, window_minutes: float) -> float:
         """
-        计算时间窗口内的交易量总和
+        获取当前24小时交易量（USDT）
+
+        注意：Binance WebSocket 返回的是24小时累计交易量，不是增量
+        因此这里直接返回最新的交易量数据
 
         Args:
             symbol: 币种符号
-            window_minutes: 时间窗口（分钟）
+            window_minutes: 时间窗口（分钟）- 此参数保留但不使用
 
         Returns:
-            交易量总和（USDT）
+            24小时交易量（USDT）
         """
-        if symbol not in self.price_history:
-            return 0.0
-
-        history = self.price_history[symbol]
-        samples_needed = int(window_minutes / self.sample_interval_minutes)
-
-        if len(history) < samples_needed + 1:
-            return 0.0
-
-        # 计算窗口内所有采样点的交易量总和
-        total_volume = 0.0
-        for i in range(samples_needed + 1):
-            point = history[-(i + 1)]
-            total_volume += point.volume
-
-        return total_volume
+        # 直接返回最新的24小时交易量
+        return self.latest_volumes.get(symbol, 0.0)
 
     def _update_market_data(self):
         """更新市值数据（每5分钟）"""
@@ -404,7 +393,7 @@ class ConfigurableMonitor:
                         self.logger.info(
                             f"      🚀 {symbol}: {change:+.2f}% | "
                             f"价格: ${current_price:.6f} | "
-                            f"{window_text}量: {volume_str} | "
+                            f"24h量: {volume_str} | "
                             f"市值: {market_cap_str} | "
                             f"FDV: {fdv_str} {alert_emoji}"
                         )
@@ -433,7 +422,7 @@ class ConfigurableMonitor:
                         self.logger.info(
                             f"      📉 {symbol}: {change:+.2f}% | "
                             f"价格: ${current_price:.6f} | "
-                            f"{window_text}量: {volume_str} | "
+                            f"24h量: {volume_str} | "
                             f"市值: {market_cap_str} | "
                             f"FDV: {fdv_str} {alert_emoji}"
                         )
