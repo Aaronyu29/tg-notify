@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 import websockets
+from python_socks.async_.asyncio import Proxy
 
 # 添加父目录到路径
 sys.path.insert(0, str(Path(__file__).parent))
@@ -470,7 +471,17 @@ class ConfigurableMonitor:
         while self.running:
             try:
                 self.logger.info("[WS] 正在连接 Binance WebSocket...")
-                async with websockets.connect(WS_URL, ping_interval=20) as ws:
+
+                # 配置代理
+                proxy = Proxy.from_url('http://localhost:7897')
+                sock = await proxy.connect(dest_host='fstream.binance.com', dest_port=443)
+
+                async with websockets.connect(
+                    WS_URL,
+                    ping_interval=20,
+                    sock=sock,
+                    server_hostname='fstream.binance.com'
+                ) as ws:
                     self.logger.info("[WS] 连接成功！")
 
                     async for message in ws:
