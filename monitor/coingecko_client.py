@@ -58,9 +58,10 @@ class CoinGeckoClient:
             # 可以继续添加更多...
         }
 
-        # 自动搜索缓存：{symbol: coingecko_id or None}
+        # 自动搜索缓存：{symbol: {"id": coingecko_id or None, "timestamp": unix_timestamp}}
         self.search_cache = {}
         self.search_cache_file = "coingecko_symbol_cache.json"
+        self.search_cache_ttl = 86400 * 7  # 7天过期（对于null值）
         self._load_search_cache()
 
     def _load_search_cache(self):
@@ -71,7 +72,20 @@ class CoinGeckoClient:
             cache_path = Path(__file__).parent / self.search_cache_file
             if cache_path.exists():
                 with open(cache_path, 'r', encoding='utf-8') as f:
-                    self.search_cache = json.load(f)
+                    old_cache = json.load(f)
+
+                # 兼容旧格式：{symbol: id} 转换为新格式：{symbol: {id, timestamp}}
+                for symbol, value in old_cache.items():
+                    if isinstance(value, dict):
+                        # 新格式
+                        self.search_cache[symbol] = value
+                    else:
+                        # 旧格式，转换为新格式
+                        self.search_cache[symbol] = {
+                            "id": value,
+                            "timestamp": time.time()
+                        }
+
                 self.logger.info(f"加载了 {len(self.search_cache)} 个币种的映射缓存")
         except Exception as e:
             self.logger.debug(f"加载搜索缓存失败: {e}")
@@ -99,7 +113,22 @@ class CoinGeckoClient:
         """
         # 检查缓存
         if symbol in self.search_cache:
-            return self.search_cache[symbol]
+            cache_entry = self.search_cache[symbol]
+            coin_id = cache_entry.get("id")
+            timestamp = cache_entry.get("timestamp", 0)
+
+            # 如果找到了ID（非None），直接返回
+            if coin_id is not None:
+                return coin_id
+
+            # 如果是None，检查是否过期（7天后重试）
+            if time.time() - timestamp < self.search_cache_ttl:
+                # 未过期，返回None
+                return None
+            else:
+                # 已过期，删除缓存，重新搜索
+                self.logger.debug(f"{symbol} 的null缓存已过期，重新搜索")
+                del self.search_cache[symbol]
 
         # 提取币种名称（去掉 USDT）
         coin_symbol = symbol.replace("USDT", "").lower()
@@ -126,13 +155,19 @@ class CoinGeckoClient:
                     if coin.get("symbol", "").lower() == coin_symbol:
                         coin_id = coin.get("id")
                         self.logger.info(f"找到映射: {symbol} -> {coin_id}")
-                        self.search_cache[symbol] = coin_id
+                        self.search_cache[symbol] = {
+                            "id": coin_id,
+                            "timestamp": time.time()
+                        }
                         self._save_search_cache()
                         return coin_id
 
                 # 如果没有精确匹配，返回 None
                 self.logger.debug(f"未找到 {symbol} 的精确匹配")
-                self.search_cache[symbol] = None
+                self.search_cache[symbol] = {
+                    "id": None,
+                    "timestamp": time.time()
+                }
                 self._save_search_cache()
                 return None
             else:
@@ -233,7 +268,8 @@ class CoinGeckoClient:
                         if cg_id:
                             id_to_symbol[cg_id] = symbol
                     # 添加搜索缓存中的映射
-                    for symbol, cg_id in self.search_cache.items():
+                    for symbol, cache_entry in self.search_cache.items():
+                        cg_id = cache_entry.get("id") if isinstance(cache_entry, dict) else cache_entry
                         if cg_id:
                             id_to_symbol[cg_id] = symbol
 

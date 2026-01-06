@@ -315,8 +315,11 @@ class ConfigurableMonitor:
             if top_symbols:
                 self.market_data = self.coingecko.get_market_data(top_symbols)
                 self.last_market_update = now
+                self.logger.debug(f"成功更新 {len(self.market_data)} 个币种的市值数据")
         except Exception as e:
             self.logger.error(f"更新市值数据失败: {e}")
+            # 不更新 last_market_update，下次继续尝试
+            # market_data 保持旧数据，不影响监控主流程
 
     async def _sample_loop(self):
         """定时采样循环"""
@@ -380,10 +383,14 @@ class ConfigurableMonitor:
                                 if rule["direction"] == "up" and change > rule["threshold"]:
                                     alert_emoji = "⚠️"
 
-                        # 获取市值数据
-                        market_info = self.market_data.get(symbol, {})
-                        market_cap = market_info.get("market_cap", 0)
-                        fdv = market_info.get("fdv", 0)
+                        # 获取市值数据（安全获取，失败不影响主流程）
+                        try:
+                            market_info = self.market_data.get(symbol, {})
+                            market_cap = market_info.get("market_cap", 0)
+                            fdv = market_info.get("fdv", 0)
+                        except Exception:
+                            market_cap = 0
+                            fdv = 0
 
                         # 格式化显示
                         volume_str = self.coingecko.format_volume(window_volume)
@@ -392,7 +399,8 @@ class ConfigurableMonitor:
 
                         self.logger.info(
                             f"      🚀 {symbol}: {change:+.2f}% | "
-                            f"价格: ${current_price:.6f} | "
+                            f"现价: ${current_price:.6f} | "
+                            f"{window_text}前: ${old_price:.6f} | "
                             f"24h量: {volume_str} | "
                             f"市值: {market_cap_str} | "
                             f"FDV: {fdv_str} {alert_emoji}"
@@ -409,10 +417,14 @@ class ConfigurableMonitor:
                                 if rule["direction"] == "down" and change < -rule["threshold"]:
                                     alert_emoji = "⚠️"
 
-                        # 获取市值数据
-                        market_info = self.market_data.get(symbol, {})
-                        market_cap = market_info.get("market_cap", 0)
-                        fdv = market_info.get("fdv", 0)
+                        # 获取市值数据（安全获取，失败不影响主流程）
+                        try:
+                            market_info = self.market_data.get(symbol, {})
+                            market_cap = market_info.get("market_cap", 0)
+                            fdv = market_info.get("fdv", 0)
+                        except Exception:
+                            market_cap = 0
+                            fdv = 0
 
                         # 格式化显示
                         volume_str = self.coingecko.format_volume(window_volume)
@@ -421,7 +433,8 @@ class ConfigurableMonitor:
 
                         self.logger.info(
                             f"      📉 {symbol}: {change:+.2f}% | "
-                            f"价格: ${current_price:.6f} | "
+                            f"现价: ${current_price:.6f} | "
+                            f"{window_text}前: ${old_price:.6f} | "
                             f"24h量: {volume_str} | "
                             f"市值: {market_cap_str} | "
                             f"FDV: {fdv_str} {alert_emoji}"

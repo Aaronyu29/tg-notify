@@ -1,16 +1,346 @@
 {
-  "BREVUSDT": "brevis",
-  "C98USDT": "coin98",
-  "CELOUSDT": "celo",
-  "ONTUSDT": "ontology",
-  "MERLUSDT": "merlin-chain",
-  "1000SATSUSDT": "1000sats-ordinals",
-  "FLOWUSDT": "flow",
-  "BOMEUSDT": "book-of-meme",
-  "ALICEUSDT": "my-neighbor-alice",
-  "WIFUSDT": "dogwifcoin",
-  "IOUSDT": "io",
-  "QUSDT": null,
-  "FORMUSDT": "four",
-  "SOMIUSDT": "somnia"
+  "BREVUSDT": {
+    "id": "brevis",
+    "timestamp": 1767672574.5398436
+  },
+  "C98USDT": {
+    "id": "coin98",
+    "timestamp": 1767672574.5398455
+  },
+  "CELOUSDT": {
+    "id": "celo",
+    "timestamp": 1767672574.539846
+  },
+  "ONTUSDT": {
+    "id": "ontology",
+    "timestamp": 1767672574.5398464
+  },
+  "MERLUSDT": {
+    "id": "merlin-chain",
+    "timestamp": 1767672574.5398464
+  },
+  "1000SATSUSDT": {
+    "id": "1000sats-ordinals",
+    "timestamp": 1767672574.5398467
+  },
+  "FLOWUSDT": {
+    "id": "flow",
+    "timestamp": 1767672574.539847
+  },
+  "BOMEUSDT": {
+    "id": "book-of-meme",
+    "timestamp": 1767672574.5398471
+  },
+  "ALICEUSDT": {
+    "id": "my-neighbor-alice",
+    "timestamp": 1767672574.5398476
+  },
+  "WIFUSDT": {
+    "id": "dogwifcoin",
+    "timestamp": 1767672574.5398476
+  },
+  "IOUSDT": {
+    "id": "io",
+    "timestamp": 1767672574.5398479
+  },
+  "QUSDT": {
+    "id": null,
+    "timestamp": 1767672574.53985
+  },
+  "FORMUSDT": {
+    "id": "four",
+    "timestamp": 1767672574.5398502
+  },
+  "SOMIUSDT": {
+    "id": "somnia",
+    "timestamp": 1767672574.5398505
+  },
+  "1000FLOKIUSDT": {
+    "id": null,
+    "timestamp": 1767672574.5398505
+  },
+  "TRXUSDT": {
+    "id": "tron",
+    "timestamp": 1767672574.5398507
+  },
+  "ORCAUSDT": {
+    "id": "orca",
+    "timestamp": 1767672574.539851
+  },
+  "BROCCOLI714USDT": {
+    "id": null,
+    "timestamp": 1767672574.539851
+  },
+  "CLANKERUSDT": {
+    "id": "tokenbot-2",
+    "timestamp": 1767672574.5398512
+  },
+  "WALUSDT": {
+    "id": "walrus-2",
+    "timestamp": 1767672574.5398514
+  },
+  "AVNTUSDT": {
+    "id": "avantis",
+    "timestamp": 1767672574.5398517
+  },
+  "BCHUSDT": {
+    "id": "bitcoin-cash",
+    "timestamp": 1767672574.5398517
+  },
+  "LPTUSDT": {
+    "id": "livepeer",
+    "timestamp": 1767672574.5398524
+  },
+  "HANAUSDT": {
+    "id": "hana-network",
+    "timestamp": 1767672574.5398526
+  },
+  "FOLKSUSDT": {
+    "id": "folks",
+    "timestamp": 1767672574.5398526
+  },
+  "PIEVERSEUSDT": {
+    "id": "pieverse",
+    "timestamp": 1767672574.5398529
+  },
+  "HUMAUSDT": {
+    "id": "huma-finance",
+    "timestamp": 1767672574.5398529
+  },
+  "ETHFIUSDT": {
+    "id": "ether-fi",
+    "timestamp": 1767672574.539853
+  },
+  "MEMEUSDT": {
+    "id": "memecoin-2",
+    "timestamp": 1767672574.5398533
+  },
+  "PENGUUSDT": {
+    "id": "pudgy-penguins",
+    "timestamp": 1767672574.5398533
+  },
+  "SIRENUSDT": {
+    "id": "siren-2",
+    "timestamp": 1767672574.5398536
+  },
+  "ZECUSDT": {
+    "id": "zcash",
+    "timestamp": 1767672574.5398538
+  },
+  "ZKPUSDT": {
+    "id": "zkpass",
+    "timestamp": 1767672574.5398538
+  },
+  "PEOPLEUSDT": {
+    "id": "constitutiondao",
+    "timestamp": 1767672574.539854
+  },
+  "VIRTUALUSDT": {
+    "id": "virtual-protocol",
+    "timestamp": 1767672574.539854
+  },
+  "RAVEUSDT": {
+    "id": "ravedao",
+    "timestamp": 1767672574.539854
+  },
+  "BEATUSDT": {
+    "id": "audiera",
+    "timestamp": 1767672574.5398543
+  },
+  "WETUSDT": {
+    "id": "humidifi",
+    "timestamp": 1767672574.5398545
+  },
+  "HIVEUSDT": {
+    "id": "hive",
+    "timestamp": 1767672574.5398545
+  },
+  "STORJUSDT": {
+    "id": "storj",
+    "timestamp": 1767672574.5398545
+  },
+  "XPLUSDT": {
+    "id": "plasma",
+    "timestamp": 1767672574.5398548
+  },
+  "COOKIEUSDT": {
+    "id": "cookie",
+    "timestamp": 1767672574.539855
+  },
+  "SEIUSDT": {
+    "id": "sei-network",
+    "timestamp": 1767672574.539855
+  },
+  "EDENUSDT": {
+    "id": "openeden",
+    "timestamp": 1767672574.5398557
+  },
+  "SSVUSDT": {
+    "id": "ssv-network",
+    "timestamp": 1767672574.5398557
+  },
+  "NEIROUSDT": {
+    "id": "neiro-3",
+    "timestamp": 1767672574.539856
+  },
+  "USELESSUSDT": {
+    "id": "useless-3",
+    "timestamp": 1767672574.539856
+  },
+  "BRETTUSDT": {
+    "id": "based-brett",
+    "timestamp": 1767672574.5398562
+  },
+  "HAEDALUSDT": {
+    "id": "haedal",
+    "timestamp": 1767672574.5398564
+  },
+  "LYNUSDT": {
+    "id": "everlyn",
+    "timestamp": 1767672574.5398564
+  },
+  "CETUSUSDT": {
+    "id": "cetus-protocol",
+    "timestamp": 1767672574.5398567
+  },
+  "MEUSDT": {
+    "id": "magic-eden",
+    "timestamp": 1767672574.5398567
+  },
+  "SQDUSDT": {
+    "id": "subsquid",
+    "timestamp": 1767672574.539857
+  },
+  "POLUSDT": {
+    "id": "polygon-ecosystem-token",
+    "timestamp": 1767672574.539857
+  },
+  "DOLOUSDT": {
+    "id": "dolomite",
+    "timestamp": 1767672574.5398571
+  },
+  "OMUSDT": {
+    "id": "mantra-dao",
+    "timestamp": 1767672574.5398574
+  },
+  "SAGAUSDT": {
+    "id": "saga-2",
+    "timestamp": 1767672574.5398574
+  },
+  "AEVOUSDT": {
+    "id": "aevo-exchange",
+    "timestamp": 1767672607.2235599
+  },
+  "LUNA2USDT": {
+    "id": null,
+    "timestamp": 1767672708.5399966
+  },
+  "AAVEUSDT": {
+    "id": "aave",
+    "timestamp": 1767672711.1229527
+  },
+  "ONGUSDT": {
+    "id": "ong",
+    "timestamp": 1767672713.7795062
+  },
+  "ATHUSDT": {
+    "id": "aethir",
+    "timestamp": 1767672716.4127638
+  },
+  "SUIUSDT": {
+    "id": "sui",
+    "timestamp": 1767672718.9417262
+  },
+  "IRYSUSDT": {
+    "id": "irys",
+    "timestamp": 1767672721.5759573
+  },
+  "EGLDUSDT": {
+    "id": "elrond-erd-2",
+    "timestamp": 1767672724.2287347
+  },
+  "MOODENGUSDT": {
+    "id": "moo-deng",
+    "timestamp": 1767672726.8782005
+  },
+  "ICPUSDT": {
+    "id": "internet-computer",
+    "timestamp": 1767672729.548684
+  },
+  "TIAUSDT": {
+    "id": "celestia",
+    "timestamp": 1767672732.2253718
+  },
+  "FILUSDT": {
+    "id": "filecoin",
+    "timestamp": 1767672734.8595755
+  },
+  "RIVERUSDT": {
+    "id": "river",
+    "timestamp": 1767672737.4102654
+  },
+  "FXSUSDT": {
+    "id": null,
+    "timestamp": 1767672740.0648608
+  },
+  "1000PEPEUSDT": {
+    "id": null,
+    "timestamp": 1767672742.673682
+  },
+  "WCTUSDT": {
+    "id": "connect-token-wct",
+    "timestamp": 1767672935.5588982
+  },
+  "PHAUSDT": {
+    "id": "pha",
+    "timestamp": 1767672938.2479956
+  },
+  "MUSDT": {
+    "id": "memecore",
+    "timestamp": 1767672941.5207982
+  },
+  "LIGHTUSDT": {
+    "id": "bitlight",
+    "timestamp": 1767672944.1726549
+  },
+  "SAPIENUSDT": {
+    "id": "sapien-2",
+    "timestamp": 1767672946.881411
+  },
+  "MAVIAUSDT": {
+    "id": "heroes-of-mavia",
+    "timestamp": 1767672949.4900966
+  },
+  "NXPCUSDT": {
+    "id": "nexpace",
+    "timestamp": 1767672952.1867683
+  },
+  "CLOUSDT": {
+    "id": "yei-finance",
+    "timestamp": 1767672957.3966098
+  },
+  "SYNUSDT": {
+    "id": "synapse-2",
+    "timestamp": 1767672962.7161744
+  },
+  "IOTAUSDT": {
+    "id": "iota",
+    "timestamp": 1767672965.3547018
+  },
+  "VVVUSDT": {
+    "id": "venice-token",
+    "timestamp": 1767672967.9168632
+  },
+  "PTBUSDT": {
+    "id": "portal-to-bitcoin",
+    "timestamp": 1767672970.5859056
+  },
+  "AKEUSDT": {
+    "id": null,
+    "timestamp": 1767673246.0138586
+  },
+  "LITUSDT": {
+    "id": "lighter",
+    "timestamp": 1767673248.741573
+  }
 }
