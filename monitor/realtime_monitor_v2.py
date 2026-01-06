@@ -32,6 +32,7 @@ from chinese_converter import (
     price_to_chinese
 )
 from logger import Logger
+from coingecko_client import CoinGeckoClient
 
 
 # ========== 数据结构 ==========
@@ -39,6 +40,7 @@ from logger import Logger
 class PricePoint:
     timestamp: float
     price: float
+    volume: float = 0.0  # 交易量（USDT）
 
 
 class ConfigurableMonitor:
@@ -60,6 +62,8 @@ class ConfigurableMonitor:
         self.price_history: dict[str, deque] = {}
         # 最新价格: {symbol: price}
         self.latest_prices: dict[str, float] = {}
+        # 最新交易量: {symbol: volume}
+        self.latest_volumes: dict[str, float] = {}
         # 上次采样时间
         self.last_sample_time = 0
         # 运行状态
@@ -69,6 +73,11 @@ class ConfigurableMonitor:
 
         # 创建告警生成器
         self.alert_generator = AlertGenerator()
+
+        # 创建 CoinGecko 客户端
+        self.coingecko = CoinGeckoClient()
+        self.market_data = {}  # 存储市值数据
+        self.last_market_update = 0
 
         # 添加规则
         self._setup_rules()
@@ -121,7 +130,8 @@ class ConfigurableMonitor:
 
         for symbol, price in self.latest_prices.items():
             history = self._get_or_create_history(symbol)
-            history.append(PricePoint(timestamp=now, price=price))
+            volume = self.latest_volumes.get(symbol, 0.0)
+            history.append(PricePoint(timestamp=now, price=price, volume=volume))
             sampled_count += 1
 
         self.last_sample_time = now
@@ -239,8 +249,11 @@ class ConfigurableMonitor:
                 continue
 
             price = float(ticker.get("c", 0))
+            volume = float(ticker.get("q", 0))  # quote asset volume (USDT)
+
             if price > 0:
                 self.latest_prices[symbol] = price
+                self.latest_volumes[symbol] = volume
 
     def _get_top_movers(self, window_minutes: int, top_n: int = 5) -> tuple[list, list]:
         """
@@ -248,14 +261,18 @@ class ConfigurableMonitor:
 
         Returns:
             (top_gainers, top_losers) - 涨幅榜和跌幅榜
-            每个元素是 (symbol, change_percent, current_price, old_price)
+            每个元素是 (symbol, change_percent, current_price, old_price, window_volume)
         """
         movers = []
         for symbol in self.latest_prices.keys():
             result = self._calculate_change(symbol, window_minutes)
             if result is not None:
                 change_percent, current_price, old_price = result
-                movers.append((symbol, change_percent, current_price, old_price))
+
+                # 计算时间窗口内的交易量
+                window_volume = self._calculate_window_volume(symbol, window_minutes)
+
+                movers.append((symbol, change_percent, current_price, old_price, window_volume))
 
         # 按涨跌幅排序
         movers.sort(key=lambda x: x[1], reverse=True)
@@ -268,6 +285,49 @@ class ConfigurableMonitor:
 
         return top_gainers, top_losers
 
+    def _calculate_window_volume(self, symbol: str, window_minutes: float) -> float:
+        """
+        计算时间窗口内的交易量总和
+
+        Args:
+            symbol: 币种符号
+            window_minutes: 时间窗口（分钟）
+
+        Returns:
+            交易量总和（USDT）
+        """
+        if symbol not in self.price_history:
+            return 0.0
+
+        history = self.price_history[symbol]
+        samples_needed = int(window_minutes / self.sample_interval_minutes)
+
+        if len(history) < samples_needed + 1:
+            return 0.0
+
+        # 计算窗口内所有采样点的交易量总和
+        total_volume = 0.0
+        for i in range(samples_needed + 1):
+            point = history[-(i + 1)]
+            total_volume += point.volume
+
+        return total_volume
+
+    def _update_market_data(self):
+        """更新市值数据（每5分钟）"""
+        now = time.time()
+        if now - self.last_market_update < 300:  # 5分钟更新一次
+            return
+
+        try:
+            # 获取 Top 50 币种的市值数据
+            top_symbols = list(self.latest_prices.keys())[:50]
+            if top_symbols:
+                self.market_data = self.coingecko.get_market_data(top_symbols)
+                self.last_market_update = now
+        except Exception as e:
+            self.logger.error(f"更新市值数据失败: {e}")
+
     async def _sample_loop(self):
         """定时采样循环"""
         while self.running:
@@ -275,6 +335,9 @@ class ConfigurableMonitor:
 
             now_str = datetime.now().strftime("%H:%M:%S")
             sampled = self._sample_prices()
+
+            # 更新市值数据（每5分钟）
+            self._update_market_data()
 
             # 检查告警
             try:
@@ -319,33 +382,59 @@ class ConfigurableMonitor:
                 # 显示涨幅榜
                 if top_gainers:
                     self.logger.info(f"  🚀 {window_text}涨幅榜 Top {TOP_N_DISPLAY}:")
-                    for symbol, change, current_price, old_price in top_gainers:
+                    for symbol, change, current_price, old_price, window_volume in top_gainers:
                         # 检查是否超过任何阈值
                         alert_emoji = ""
                         for rule in ALERT_RULES:
                             if rule["window_minutes"] == window:
                                 if rule["direction"] == "up" and change > rule["threshold"]:
                                     alert_emoji = "⚠️"
+
+                        # 获取市值数据
+                        market_info = self.market_data.get(symbol, {})
+                        market_cap = market_info.get("market_cap", 0)
+                        fdv = market_info.get("fdv", 0)
+
+                        # 格式化显示
+                        volume_str = self.coingecko.format_volume(window_volume)
+                        market_cap_str = self.coingecko.format_market_cap(market_cap)
+                        fdv_str = self.coingecko.format_market_cap(fdv)
+
                         self.logger.info(
                             f"      🚀 {symbol}: {change:+.2f}% | "
-                            f"当前: ${current_price:.6f} | "
-                            f"{window_text}前: ${old_price:.6f} {alert_emoji}"
+                            f"价格: ${current_price:.6f} | "
+                            f"{window_text}量: {volume_str} | "
+                            f"市值: {market_cap_str} | "
+                            f"FDV: {fdv_str} {alert_emoji}"
                         )
 
                 # 显示跌幅榜
                 if top_losers:
                     self.logger.info(f"  📉 {window_text}跌幅榜 Top {TOP_N_DISPLAY}:")
-                    for symbol, change, current_price, old_price in top_losers:
+                    for symbol, change, current_price, old_price, window_volume in top_losers:
                         # 检查是否超过任何阈值
                         alert_emoji = ""
                         for rule in ALERT_RULES:
                             if rule["window_minutes"] == window:
                                 if rule["direction"] == "down" and change < -rule["threshold"]:
                                     alert_emoji = "⚠️"
+
+                        # 获取市值数据
+                        market_info = self.market_data.get(symbol, {})
+                        market_cap = market_info.get("market_cap", 0)
+                        fdv = market_info.get("fdv", 0)
+
+                        # 格式化显示
+                        volume_str = self.coingecko.format_volume(window_volume)
+                        market_cap_str = self.coingecko.format_market_cap(market_cap)
+                        fdv_str = self.coingecko.format_market_cap(fdv)
+
                         self.logger.info(
                             f"      📉 {symbol}: {change:+.2f}% | "
-                            f"当前: ${current_price:.6f} | "
-                            f"{window_text}前: ${old_price:.6f} {alert_emoji}"
+                            f"价格: ${current_price:.6f} | "
+                            f"{window_text}量: {volume_str} | "
+                            f"市值: {market_cap_str} | "
+                            f"FDV: {fdv_str} {alert_emoji}"
                         )
 
             # 显示告警状态或等待提示
