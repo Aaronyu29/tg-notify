@@ -291,66 +291,87 @@ class ConfigurableMonitor:
             self.logger.info(f"\n[{now_str}] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             self.logger.info(f"  📊 采样: {sampled} 个币种 | 历史: {history_len}/{self.max_history} 点")
 
-            # 显示涨跌幅 Top N
-            if history_len >= self.max_history:
-                # 获取所有不同的时间窗口并排序
-                windows_to_display = sorted(set(rule["window_minutes"] for rule in ALERT_RULES))
+            # 显示涨跌幅 Top N - 每个时间窗口独立判断
+            # 获取所有不同的时间窗口并排序
+            windows_to_display = sorted(set(rule["window_minutes"] for rule in ALERT_RULES))
 
-                # 遍历每个时间窗口
-                for window in windows_to_display:
-                    # 格式化时间窗口显示
-                    if window < 1:
-                        window_text = f"{int(window * 60)}秒"
-                    else:
-                        window_text = f"{int(window)}分钟"
+            has_any_display = False  # 标记是否有任何窗口可以显示
 
-                    # 计算需要的采样点数
-                    samples_needed = int(window / self.sample_interval_minutes)
+            # 遍历每个时间窗口
+            for window in windows_to_display:
+                # 格式化时间窗口显示
+                if window < 1:
+                    window_text = f"{int(window * 60)}秒"
+                else:
+                    window_text = f"{int(window)}分钟"
 
-                    # 检查是否有足够的历史数据
-                    if history_len < samples_needed + 1:
-                        continue
+                # 计算需要的采样点数
+                samples_needed = int(window / self.sample_interval_minutes)
 
-                    top_gainers, top_losers = self._get_top_movers(window, TOP_N_DISPLAY)
+                # 检查是否有足够的历史数据（独立判断每个窗口）
+                if history_len < samples_needed + 1:
+                    # 这个窗口数据不够，跳过
+                    continue
 
-                    # 显示涨幅榜
-                    if top_gainers:
-                        self.logger.info(f"  🚀 {window_text}涨幅榜 Top {TOP_N_DISPLAY}:")
-                        for symbol, change, current_price, old_price in top_gainers:
-                            # 检查是否超过任何阈值
-                            alert_emoji = ""
-                            for rule in ALERT_RULES:
-                                if rule["window_minutes"] == window:
-                                    if rule["direction"] == "up" and change > rule["threshold"]:
-                                        alert_emoji = "⚠️"
-                            self.logger.info(
-                                f"      🚀 {symbol}: {change:+.2f}% | "
-                                f"当前: ${current_price:.6f} | "
-                                f"{window_text}前: ${old_price:.6f} {alert_emoji}"
-                            )
+                has_any_display = True
+                top_gainers, top_losers = self._get_top_movers(window, TOP_N_DISPLAY)
 
-                    # 显示跌幅榜
-                    if top_losers:
-                        self.logger.info(f"  📉 {window_text}跌幅榜 Top {TOP_N_DISPLAY}:")
-                        for symbol, change, current_price, old_price in top_losers:
-                            # 检查是否超过任何阈值
-                            alert_emoji = ""
-                            for rule in ALERT_RULES:
-                                if rule["window_minutes"] == window:
-                                    if rule["direction"] == "down" and change < -rule["threshold"]:
-                                        alert_emoji = "⚠️"
-                            self.logger.info(
-                                f"      📉 {symbol}: {change:+.2f}% | "
-                                f"当前: ${current_price:.6f} | "
-                                f"{window_text}前: ${old_price:.6f} {alert_emoji}"
-                            )
+                # 显示涨幅榜
+                if top_gainers:
+                    self.logger.info(f"  🚀 {window_text}涨幅榜 Top {TOP_N_DISPLAY}:")
+                    for symbol, change, current_price, old_price in top_gainers:
+                        # 检查是否超过任何阈值
+                        alert_emoji = ""
+                        for rule in ALERT_RULES:
+                            if rule["window_minutes"] == window:
+                                if rule["direction"] == "up" and change > rule["threshold"]:
+                                    alert_emoji = "⚠️"
+                        self.logger.info(
+                            f"      🚀 {symbol}: {change:+.2f}% | "
+                            f"当前: ${current_price:.6f} | "
+                            f"{window_text}前: ${old_price:.6f} {alert_emoji}"
+                        )
 
+                # 显示跌幅榜
+                if top_losers:
+                    self.logger.info(f"  📉 {window_text}跌幅榜 Top {TOP_N_DISPLAY}:")
+                    for symbol, change, current_price, old_price in top_losers:
+                        # 检查是否超过任何阈值
+                        alert_emoji = ""
+                        for rule in ALERT_RULES:
+                            if rule["window_minutes"] == window:
+                                if rule["direction"] == "down" and change < -rule["threshold"]:
+                                    alert_emoji = "⚠️"
+                        self.logger.info(
+                            f"      📉 {symbol}: {change:+.2f}% | "
+                            f"当前: ${current_price:.6f} | "
+                            f"{window_text}前: ${old_price:.6f} {alert_emoji}"
+                        )
+
+            # 显示告警状态或等待提示
+            if has_any_display:
                 # 告警状态
                 if alerts > 0:
                     self.logger.info(f"  🚨 已发送 {alerts} 条告警")
                 else:
                     self.logger.info(f"  ✅ 暂无币种触发告警阈值")
+
+                # 显示还在等待的窗口
+                waiting_windows = []
+                for window in windows_to_display:
+                    samples_needed = int(window / self.sample_interval_minutes)
+                    if history_len < samples_needed + 1:
+                        if window < 1:
+                            window_text = f"{int(window * 60)}秒"
+                        else:
+                            window_text = f"{int(window)}分钟"
+                        remaining = samples_needed + 1 - history_len
+                        waiting_windows.append(f"{window_text}(还需{remaining}点)")
+
+                if waiting_windows:
+                    self.logger.info(f"  ⏳ 等待数据: {', '.join(waiting_windows)}")
             else:
+                # 所有窗口都没有足够数据
                 remaining_samples = self.max_history - history_len
                 remaining_time = remaining_samples * SAMPLE_INTERVAL
                 self.logger.info(f"  ⏳ 等待历史数据积累中... (还需 {remaining_samples} 个采样点，约 {remaining_time} 秒)")
