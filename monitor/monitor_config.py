@@ -5,8 +5,8 @@
 
 # ========== 基础配置 ==========
 
-# 采样间隔（秒）- 建议 60 秒
-SAMPLE_INTERVAL = 60
+# 采样间隔（秒）- 改为 30 秒以支持 30 秒告警规则
+SAMPLE_INTERVAL = 30
 
 # 告警冷却时间（秒）- 防止同一币种频繁告警
 ALERT_COOLDOWN = 900  # 15分钟
@@ -20,13 +20,31 @@ WS_URL = "wss://fstream.binance.com/ws/!miniTicker@arr"
 # 规则格式说明：
 # {
 #     "name": "规则名称",
-#     "window_minutes": 时间窗口（分钟）,
+#     "window_minutes": 时间窗口（分钟），支持小数（如 0.5 = 30秒）,
 #     "threshold": 阈值（百分比）,
 #     "direction": "up" 或 "down",  # up=暴涨, down=暴跌
 #     "priority": "normal" 或 "high" 或 "critical"
 # }
 
 ALERT_RULES = [
+    # 30秒暴涨 5%
+    {
+        "name": "30秒暴涨5%",
+        "window_minutes": 0.5,  # 0.5分钟 = 30秒
+        "threshold": 5.0,
+        "direction": "up",
+        "priority": "high"
+    },
+
+    # 30秒暴跌 5%
+    {
+        "name": "30秒暴跌5%",
+        "window_minutes": 0.5,  # 0.5分钟 = 30秒
+        "threshold": 5.0,
+        "direction": "down",
+        "priority": "high"
+    },
+
     # 5分钟暴涨 15%
     {
         "name": "5分钟暴涨15%",

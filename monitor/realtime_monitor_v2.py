@@ -48,9 +48,13 @@ class ConfigurableMonitor:
         # 初始化日志器
         self.logger = Logger(name="monitor", keep_hours=24)
 
-        # 计算最大历史深度
+        # 计算采样间隔（分钟）
+        self.sample_interval_minutes = SAMPLE_INTERVAL / 60  # 例如: 30秒 = 0.5分钟
+
+        # 计算最大历史深度（考虑采样间隔）
         self.max_window = max(rule["window_minutes"] for rule in ALERT_RULES)
-        self.max_history = self.max_window + 1
+        # 例如: 5分钟窗口，30秒采样 = 5 / 0.5 + 1 = 11个点
+        self.max_history = int(self.max_window / self.sample_interval_minutes) + 1
 
         # 价格历史: {symbol: deque of PricePoint}
         self.price_history: dict[str, deque] = {}
@@ -95,7 +99,14 @@ class ConfigurableMonitor:
             )
 
             self.alert_generator.add_rule(rule)
-            self.logger.info(f"  ✓ {name} ({window}分钟, {direction}, {priority})")
+
+            # 格式化时间窗口显示
+            if window < 1:
+                window_text = f"{int(window * 60)}秒"
+            else:
+                window_text = f"{int(window)}分钟"
+
+            self.logger.info(f"  ✓ {name} ({window_text}, {direction}, {priority})")
 
     def _get_or_create_history(self, symbol: str) -> deque:
         """获取或创建币种的价格历史队列"""
@@ -116,9 +127,12 @@ class ConfigurableMonitor:
         self.last_sample_time = now
         return sampled_count
 
-    def _calculate_change(self, symbol: str, window_minutes: int) -> Optional[tuple[float, float, float]]:
+    def _calculate_change(self, symbol: str, window_minutes: float) -> Optional[tuple[float, float, float]]:
         """
         计算指定时间窗口内的涨跌幅
+
+        Args:
+            window_minutes: 时间窗口（分钟），支持小数（如0.5表示30秒）
 
         Returns:
             (change_percent, current_price, old_price) 或 None
@@ -127,7 +141,14 @@ class ConfigurableMonitor:
             return None
 
         history = self.price_history[symbol]
-        if len(history) < window_minutes + 1:
+
+        # 计算需要多少个采样点
+        # 例如: 30秒(0.5分钟) / 0.5分钟采样间隔 = 1个点
+        # 例如: 5分钟 / 0.5分钟采样间隔 = 10个点
+        samples_needed = int(window_minutes / self.sample_interval_minutes)
+
+        # 需要 samples_needed + 1 个点（包括当前点）
+        if len(history) < samples_needed + 1:
             return None
 
         current_price = self.latest_prices.get(symbol)
@@ -135,8 +156,8 @@ class ConfigurableMonitor:
             return None
 
         # 获取 window_minutes 分钟前的价格
-        # history[0] 是最早的，history[-1] 是最新的
-        old_point = history[-(window_minutes + 1)]
+        # history[-1] 是最新的，history[-(samples_needed + 1)] 是 window_minutes 前的
+        old_point = history[-(samples_needed + 1)]
         old_price = old_point.price
 
         if old_price <= 0:
@@ -268,45 +289,61 @@ class ConfigurableMonitor:
                 history_len = len(next(iter(self.price_history.values())))
 
             self.logger.info(f"\n[{now_str}] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            self.logger.info(f"  📊 采样: {sampled} 个币种 | 历史: {history_len}/{self.max_history} 分钟")
+            self.logger.info(f"  📊 采样: {sampled} 个币种 | 历史: {history_len}/{self.max_history} 点")
 
             # 显示涨跌幅 Top N
-            if history_len >= self.max_window + 1:
-                # 显示最小时间窗口的 Top N
-                min_window = min(rule["window_minutes"] for rule in ALERT_RULES)
-                top_gainers, top_losers = self._get_top_movers(min_window, TOP_N_DISPLAY)
+            if history_len >= self.max_history:
+                # 获取所有不同的时间窗口并排序
+                windows_to_display = sorted(set(rule["window_minutes"] for rule in ALERT_RULES))
 
-                # 显示涨幅榜
-                if top_gainers:
-                    self.logger.info(f"  🚀 {min_window}分钟涨幅榜 Top {TOP_N_DISPLAY}:")
-                    for symbol, change, current_price, old_price in top_gainers:
-                        # 检查是否超过任何阈值
-                        alert_emoji = ""
-                        for rule in ALERT_RULES:
-                            if rule["window_minutes"] == min_window:
-                                if rule["direction"] == "up" and change > rule["threshold"]:
-                                    alert_emoji = "⚠️"
-                        self.logger.info(
-                            f"      🚀 {symbol}: {change:+.2f}% | "
-                            f"当前: ${current_price:.6f} | "
-                            f"{min_window}分钟前: ${old_price:.6f} {alert_emoji}"
-                        )
+                # 遍历每个时间窗口
+                for window in windows_to_display:
+                    # 格式化时间窗口显示
+                    if window < 1:
+                        window_text = f"{int(window * 60)}秒"
+                    else:
+                        window_text = f"{int(window)}分钟"
 
-                # 显示跌幅榜
-                if top_losers:
-                    self.logger.info(f"  📉 {min_window}分钟跌幅榜 Top {TOP_N_DISPLAY}:")
-                    for symbol, change, current_price, old_price in top_losers:
-                        # 检查是否超过任何阈值
-                        alert_emoji = ""
-                        for rule in ALERT_RULES:
-                            if rule["window_minutes"] == min_window:
-                                if rule["direction"] == "down" and change < -rule["threshold"]:
-                                    alert_emoji = "⚠️"
-                        self.logger.info(
-                            f"      📉 {symbol}: {change:+.2f}% | "
-                            f"当前: ${current_price:.6f} | "
-                            f"{min_window}分钟前: ${old_price:.6f} {alert_emoji}"
-                        )
+                    # 计算需要的采样点数
+                    samples_needed = int(window / self.sample_interval_minutes)
+
+                    # 检查是否有足够的历史数据
+                    if history_len < samples_needed + 1:
+                        continue
+
+                    top_gainers, top_losers = self._get_top_movers(window, TOP_N_DISPLAY)
+
+                    # 显示涨幅榜
+                    if top_gainers:
+                        self.logger.info(f"  🚀 {window_text}涨幅榜 Top {TOP_N_DISPLAY}:")
+                        for symbol, change, current_price, old_price in top_gainers:
+                            # 检查是否超过任何阈值
+                            alert_emoji = ""
+                            for rule in ALERT_RULES:
+                                if rule["window_minutes"] == window:
+                                    if rule["direction"] == "up" and change > rule["threshold"]:
+                                        alert_emoji = "⚠️"
+                            self.logger.info(
+                                f"      🚀 {symbol}: {change:+.2f}% | "
+                                f"当前: ${current_price:.6f} | "
+                                f"{window_text}前: ${old_price:.6f} {alert_emoji}"
+                            )
+
+                    # 显示跌幅榜
+                    if top_losers:
+                        self.logger.info(f"  📉 {window_text}跌幅榜 Top {TOP_N_DISPLAY}:")
+                        for symbol, change, current_price, old_price in top_losers:
+                            # 检查是否超过任何阈值
+                            alert_emoji = ""
+                            for rule in ALERT_RULES:
+                                if rule["window_minutes"] == window:
+                                    if rule["direction"] == "down" and change < -rule["threshold"]:
+                                        alert_emoji = "⚠️"
+                            self.logger.info(
+                                f"      📉 {symbol}: {change:+.2f}% | "
+                                f"当前: ${current_price:.6f} | "
+                                f"{window_text}前: ${old_price:.6f} {alert_emoji}"
+                            )
 
                 # 告警状态
                 if alerts > 0:
@@ -314,8 +351,9 @@ class ConfigurableMonitor:
                 else:
                     self.logger.info(f"  ✅ 暂无币种触发告警阈值")
             else:
-                remaining = self.max_window + 1 - history_len
-                self.logger.info(f"  ⏳ 等待历史数据积累中... (还需 {remaining} 分钟)")
+                remaining_samples = self.max_history - history_len
+                remaining_time = remaining_samples * SAMPLE_INTERVAL
+                self.logger.info(f"  ⏳ 等待历史数据积累中... (还需 {remaining_samples} 个采样点，约 {remaining_time} 秒)")
 
     async def _websocket_loop(self):
         """WebSocket 连接循环"""
