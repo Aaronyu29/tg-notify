@@ -342,5 +342,225 @@
   "LITUSDT": {
     "id": "lighter",
     "timestamp": 1767673248.741573
+  },
+  "ARUSDT": {
+    "id": "arweave",
+    "timestamp": 1767675703.2910593
+  },
+  "SAFEUSDT": {
+    "id": "safe",
+    "timestamp": 1767675705.9859297
+  },
+  "SKLUSDT": {
+    "id": "skale",
+    "timestamp": 1767675708.6201322
+  },
+  "WLFIUSDT": {
+    "id": "world-liberty-financial",
+    "timestamp": 1767675711.2454853
+  },
+  "TAKEUSDT": {
+    "id": null,
+    "timestamp": 1767675713.9005842
+  },
+  "JASMYUSDT": {
+    "id": "jasmycoin",
+    "timestamp": 1767675716.5260482
+  },
+  "CCUSDT": {
+    "id": "canton-network",
+    "timestamp": 1767675719.1715105
+  },
+  "IPUSDT": {
+    "id": "story-2",
+    "timestamp": 1767675721.8435366
+  },
+  "BEAMXUSDT": {
+    "id": null,
+    "timestamp": 1767675724.499575
+  },
+  "AVAUSDT": {
+    "id": "concierge-io",
+    "timestamp": 1767675727.1332638
+  },
+  "TNSRUSDT": {
+    "id": "tensor",
+    "timestamp": 1767675729.8181162
+  },
+  "BIDUSDT": {
+    "id": "creatorbid",
+    "timestamp": 1767675732.4788055
+  },
+  "BATUSDT": {
+    "id": "basic-attention-token",
+    "timestamp": 1767675735.1306067
+  },
+  "RESOLVUSDT": {
+    "id": "resolv",
+    "timestamp": 1767675737.798688
+  },
+  "BANANAS31USDT": {
+    "id": "banana-for-scale-2",
+    "timestamp": 1767675750.7604246
+  },
+  "GRASSUSDT": {
+    "id": "grass",
+    "timestamp": 1767675753.4243765
+  },
+  "KERNELUSDT": {
+    "id": "kernel-2",
+    "timestamp": 1767675763.77285
+  },
+  "CKBUSDT": {
+    "id": "nervos-network",
+    "timestamp": 1767676025.4476597
+  },
+  "GUSDT": {
+    "id": null,
+    "timestamp": 1767676028.2821183
+  },
+  "NMRUSDT": {
+    "id": "numeraire",
+    "timestamp": 1767676030.9468794
+  },
+  "EPTUSDT": {
+    "id": "balance",
+    "timestamp": 1767676033.6198947
+  },
+  "ZROUSDT": {
+    "id": "layerzero",
+    "timestamp": 1767676036.2739265
+  },
+  "DEXEUSDT": {
+    "id": "dexe",
+    "timestamp": 1767676038.9702587
+  },
+  "FFUSDT": {
+    "id": "falcon-finance-ff",
+    "timestamp": 1767676041.615004
+  },
+  "MBOXUSDT": {
+    "id": "mobox",
+    "timestamp": 1767676542.3677776
+  },
+  "INITUSDT": {
+    "id": "initia",
+    "timestamp": 1767676545.025789
+  },
+  "ICNTUSDT": {
+    "id": "impossible-cloud-network-token",
+    "timestamp": 1767676547.6597486
+  },
+  "DOODUSDT": {
+    "id": "doodles",
+    "timestamp": 1767676550.3127787
+  },
+  "KOMAUSDT": {
+    "id": "koma-inu",
+    "timestamp": 1767676553.1285772
+  },
+  "KAITOUSDT": {
+    "id": "kaito",
+    "timestamp": 1767676558.377462
+  },
+  "AUCTIONUSDT": {
+    "id": "auction",
+    "timestamp": 1767676561.0314627
+  },
+  "GMXUSDT": {
+    "id": "gmx",
+    "timestamp": 1767676563.6552055
+  },
+  "4USDT": {
+    "id": "4-2",
+    "timestamp": 1767676566.324291
+  },
+  "ATUSDT": {
+    "id": null,
+    "timestamp": 1767676569.0166924
+  },
+  "RLCUSDT": {
+    "id": "iexec-rlc",
+    "timestamp": 1767676571.6490011
+  },
+  "DUSKUSDT": {
+    "id": "dusk-network",
+    "timestamp": 1767676574.2683935
+  },
+  "PENDLEUSDT": {
+    "id": "pendle",
+    "timestamp": 1767676852.6265051
+  },
+  "PNUTUSDT": {
+    "id": "peanut-the-squirrel",
+    "timestamp": 1767676855.2850137
+  },
+  "ICXUSDT": {
+    "id": "icon",
+    "timestamp": 1767714828.4958487
+  },
+  "ESPORTSUSDT": {
+    "id": "yooldo-games",
+    "timestamp": 1767714831.9394562
+  },
+  "RAYSOLUSDT": {
+    "id": null,
+    "timestamp": 1767714837.072335
+  },
+  "BROCCOLIF3BUSDT": {
+    "id": null,
+    "timestamp": 1767714843.228889
+  },
+  "KASUSDT": {
+    "id": "kaspa",
+    "timestamp": 1767714847.3757348
+  },
+  "CTKUSDT": {
+    "id": "certik",
+    "timestamp": 1767714851.1973279
+  },
+  "ACHUSDT": {
+    "id": "alchemy-pay",
+    "timestamp": 1767714855.8552032
+  },
+  "ONUSDT": {
+    "id": null,
+    "timestamp": 1767714902.2319458
+  },
+  "CVCUSDT": {
+    "id": "civic",
+    "timestamp": 1767715143.8804467
+  },
+  "ZORAUSDT": {
+    "id": "zora",
+    "timestamp": 1767715148.7602437
+  },
+  "IRUSDT": {
+    "id": null,
+    "timestamp": 1767715153.9847336
+  },
+  "WAXPUSDT": {
+    "id": "wax",
+    "timestamp": 1767715158.7438564
+  },
+  "HOTUSDT": {
+    "id": "holotoken",
+    "timestamp": 1767715161.8598933
+  },
+  "HEMIUSDT": {
+    "id": "hemi",
+    "timestamp": 1767715170.0480452
+  },
+  "SANTOSUSDT": {
+    "id": "santos-fc-fan-token",
+    "timestamp": 1767715466.4001186
+  },
+  "GUNUSDT": {
+    "id": "gunz",
+    "timestamp": 1767715471.8374517
+  },
+  "MASKUSDT": {
+    "id": "mask-network",
+    "timestamp": 1767716093.705431
   }
 }

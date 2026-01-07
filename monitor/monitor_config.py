@@ -9,7 +9,7 @@
 SAMPLE_INTERVAL = 30
 
 # 告警冷却时间（秒）- 防止同一币种频繁告警
-ALERT_COOLDOWN = 900  # 15分钟
+ALERT_COOLDOWN = 60  # 1分钟
 
 # Binance WebSocket URL
 WS_URL = "wss://fstream.binance.com/ws/!miniTicker@arr"

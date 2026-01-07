@@ -183,10 +183,13 @@ class ConfigurableMonitor:
         now = time.time()
         last_time = self.alert_cooldowns.get(key, 0)
 
-        if now - last_time >= ALERT_COOLDOWN:
-            self.alert_cooldowns[key] = now
-            return True
-        return False
+        # 只检查，不设置时间戳（时间戳应该在实际发送告警后设置）
+        return now - last_time >= ALERT_COOLDOWN
+
+    def _set_alert_cooldown(self, symbol: str, rule_name: str):
+        """设置告警冷却时间（在成功发送告警后调用）"""
+        key = (symbol, rule_name)
+        self.alert_cooldowns[key] = time.time()
 
     def _check_alerts(self):
         """检查所有币种和规则，触发告警"""
@@ -206,6 +209,8 @@ class ConfigurableMonitor:
 
                 # 检查冷却
                 if not self._can_alert(symbol, rule_name):
+                    if VERBOSE and abs(change_percent) > rule_config["threshold"]:
+                        self.logger.debug(f"[冷却中] {symbol}: {change_percent:+.2f}% - {rule_name} (冷却时间未到)")
                     continue
 
                 # 准备数据用于规则检查
@@ -234,6 +239,8 @@ class ConfigurableMonitor:
 
                         if success:
                             alerts_sent += 1
+                            # 成功发送后才设置冷却时间
+                            self._set_alert_cooldown(symbol, rule_name)
                             self.logger.info(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name}")
                             if VERBOSE:
                                 self.logger.debug(f"告警详情: {message_json}")
