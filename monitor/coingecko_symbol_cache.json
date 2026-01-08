@@ -562,5 +562,89 @@
   "MASKUSDT": {
     "id": "mask-network",
     "timestamp": 1767716093.705431
+  },
+  "MELANIAUSDT": {
+    "id": "melania-meme",
+    "timestamp": 1767751030.1720307
+  },
+  "A2ZUSDT": {
+    "id": "arena-z",
+    "timestamp": 1767751032.956932
+  },
+  "ZBTUSDT": {
+    "id": "zerobase",
+    "timestamp": 1767751035.913149
+  },
+  "SNXUSDT": {
+    "id": "havven",
+    "timestamp": 1767751038.885595
+  },
+  "BASUSDT": {
+    "id": "bas",
+    "timestamp": 1767751041.684332
+  },
+  "XAIUSDT": {
+    "id": "xai-blockchain",
+    "timestamp": 1767751044.61532
+  },
+  "PUMPBTCUSDT": {
+    "id": "pumpbtc",
+    "timestamp": 1767751047.6968067
+  },
+  "KNCUSDT": {
+    "id": "kyber-network-crystal",
+    "timestamp": 1767751050.5843093
+  },
+  "CTSIUSDT": {
+    "id": "cartesi",
+    "timestamp": 1767751053.4286156
+  },
+  "CHILLGUYUSDT": {
+    "id": "chill-guy",
+    "timestamp": 1767751056.3274271
+  },
+  "1MBABYDOGEUSDT": {
+    "id": "1mbabydoge",
+    "timestamp": 1767751064.874925
+  },
+  "HOLOUSDT": {
+    "id": "holoworld",
+    "timestamp": 1767751081.8136034
+  },
+  "ARPAUSDT": {
+    "id": "arpa",
+    "timestamp": 1767751084.6961503
+  },
+  "IMXUSDT": {
+    "id": "immutable-x",
+    "timestamp": 1767751087.5378323
+  },
+  "MINAUSDT": {
+    "id": "mina-protocol",
+    "timestamp": 1767751340.8485322
+  },
+  "RVNUSDT": {
+    "id": "ravencoin",
+    "timestamp": 1767751652.5784147
+  },
+  "SCRTUSDT": {
+    "id": "secret",
+    "timestamp": 1767751655.1833005
+  },
+  "CGPTUSDT": {
+    "id": "chaingpt",
+    "timestamp": 1767751657.8540761
+  },
+  "BANDUSDT": {
+    "id": "band-protocol",
+    "timestamp": 1767751660.5160232
+  },
+  "NTRNUSDT": {
+    "id": "neutron-3",
+    "timestamp": 1767751663.143151
+  },
+  "OXTUSDT": {
+    "id": "orchid-protocol",
+    "timestamp": 1767751665.7775276
   }
 }
