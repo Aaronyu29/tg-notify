@@ -167,3 +167,24 @@ All API endpoints (except `/health` and `/test`) require `X-API-Key` header matc
 - Monitor logs rotate automatically, keeping last 24 hours
 - CoinGecko free tier has rate limits (~30 requests/minute); client implements 2-second minimum interval
 - Symbol mapping for CoinGecko is maintained in `coingecko_client.py` and cached in `coingecko_symbol_cache.json`
+
+## Development Guidelines
+
+### Configuration File Protection
+
+**CRITICAL: Any modifications to `settings.json` or `.claude/settings.local.json` REQUIRE explicit user approval before making changes.**
+
+- **NEVER** modify these files without asking the user first
+- **ALWAYS** explain what changes you plan to make and why
+- **WAIT** for explicit confirmation ("yes", "confirm", "proceed") before editing
+- This applies to:
+  - Adding new settings
+  - Modifying existing values
+  - Removing settings
+  - Reformatting the file
+
+Example workflow:
+1. Identify need to change settings
+2. Explain proposed changes to user
+3. Wait for approval
+4. Only then make the changes
