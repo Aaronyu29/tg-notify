@@ -26,7 +26,10 @@ from monitor_config import (
     ALERT_COOLDOWN,
     WS_URL,
     VERBOSE,
-    TOP_N_DISPLAY
+    TOP_N_DISPLAY,
+    PRICE_THRESHOLD_RULES,
+    PRICE_THRESHOLD_COOLDOWN,
+    PRICE_THRESHOLD_WEBHOOK_URL
 )
 from chinese_converter import (
     number_to_chinese,
@@ -71,9 +74,22 @@ class ConfigurableMonitor:
         self.running = False
         # 告警冷却: {(symbol, rule_name): last_alert_time}
         self.alert_cooldowns: dict[tuple, float] = {}
+        # 价格阈值告警冷却: {(symbol, threshold_key): last_alert_time}
+        self.threshold_cooldowns: dict[tuple, float] = {}
+        # 价格阈值触发状态: {(symbol, threshold_key): triggered}
+        # 用于记录是否已经触发过，避免价格在阈值附近波动时重复报警
+        self.threshold_triggered: dict[tuple, bool] = {}
 
         # 创建告警生成器
         self.alert_generator = AlertGenerator()
+
+        # 创建价格阈值专用告警生成器（如果配置了独立 webhook）
+        if PRICE_THRESHOLD_WEBHOOK_URL:
+            self.threshold_alert_generator = AlertGenerator(fwalert_url=PRICE_THRESHOLD_WEBHOOK_URL)
+            self.logger.info(f"✓ 价格阈值报警使用独立 Webhook: {PRICE_THRESHOLD_WEBHOOK_URL[:50]}...")
+        else:
+            self.threshold_alert_generator = self.alert_generator
+            self.logger.info("✓ 价格阈值报警使用默认 Webhook")
 
         # 创建 CoinGecko 客户端
         self.coingecko = CoinGeckoClient()
@@ -117,6 +133,18 @@ class ConfigurableMonitor:
                 window_text = f"{int(window)}分钟"
 
             self.logger.info(f"  ✓ {name} ({window_text}, {direction}, {priority})")
+
+        # 加载价格阈值规则
+        if PRICE_THRESHOLD_RULES:
+            self.logger.info("📋 加载价格阈值规则:")
+            for rule_config in PRICE_THRESHOLD_RULES:
+                symbol = rule_config["symbol"]
+                threshold = rule_config["threshold"]
+                direction = rule_config["direction"]
+                priority = rule_config["priority"]
+
+                direction_text = "突破" if direction == "above" else "跌破"
+                self.logger.info(f"  ✓ {symbol} {direction_text} ${threshold} ({priority})")
 
     def _get_or_create_history(self, symbol: str) -> deque:
         """获取或创建币种的价格历史队列"""
@@ -249,6 +277,81 @@ class ConfigurableMonitor:
 
         return alerts_sent
 
+    def _check_price_thresholds(self):
+        """检查价格阈值报警"""
+        alerts_sent = 0
+
+        for rule_config in PRICE_THRESHOLD_RULES:
+            symbol = rule_config["symbol"]
+            threshold = rule_config["threshold"]
+            direction = rule_config["direction"]
+            priority = rule_config["priority"]
+
+            # 获取当前价格
+            current_price = self.latest_prices.get(symbol)
+            if current_price is None:
+                continue
+
+            # 生成唯一的阈值键
+            threshold_key = f"{direction}_{threshold}"
+            key = (symbol, threshold_key)
+
+            # 检查是否触发阈值
+            triggered = False
+            if direction == "above" and current_price > threshold:
+                triggered = True
+            elif direction == "below" and current_price < threshold:
+                triggered = True
+
+            # 如果触发了阈值
+            if triggered:
+                # 检查是否已经触发过（避免重复报警）
+                if self.threshold_triggered.get(key, False):
+                    # 已经触发过，检查冷却时间
+                    now = time.time()
+                    last_time = self.threshold_cooldowns.get(key, 0)
+                    if now - last_time < PRICE_THRESHOLD_COOLDOWN:
+                        # 还在冷却期，跳过
+                        continue
+                    # 冷却期已过，可以再次报警
+                    self.logger.debug(f"[价格阈值] {symbol} 冷却期已过，重新报警")
+
+                # 标记为已触发
+                self.threshold_triggered[key] = True
+                self.threshold_cooldowns[key] = time.time()
+
+                # 构建报警消息
+                symbol_short = symbol.replace("USDT", "")
+                direction_text = "突破" if direction == "above" else "跌破"
+
+                message = {
+                    "type": "price_threshold",
+                    "symbol": symbol_short,
+                    "direction": direction_text,
+                    "threshold": price_to_chinese(threshold),
+                    "currentPrice": price_to_chinese(current_price)
+                }
+
+                # 转换为 JSON 字符串并发送
+                message_json = json.dumps(message, ensure_ascii=False)
+                success = self.threshold_alert_generator.send_alert(message_json)
+
+                if success:
+                    alerts_sent += 1
+                    self.logger.info(f"[价格阈值报警] {symbol}: {direction_text} ${threshold}, 当前价格 ${current_price}")
+                    if VERBOSE:
+                        self.logger.debug(f"告警详情: {message_json}")
+                else:
+                    self.logger.error(f"[价格阈值报警失败] {symbol}: {direction_text} ${threshold}")
+
+            else:
+                # 未触发阈值，重置触发状态（允许下次触发时立即报警）
+                if self.threshold_triggered.get(key, False):
+                    self.logger.debug(f"[价格阈值] {symbol} 价格已恢复，重置触发状态")
+                    self.threshold_triggered[key] = False
+
+        return alerts_sent
+
     async def _handle_message(self, data: list):
         """处理 WebSocket 消息"""
         for ticker in data:
@@ -342,9 +445,11 @@ class ConfigurableMonitor:
             # 检查告警
             try:
                 alerts = self._check_alerts()
+                threshold_alerts = self._check_price_thresholds()
             except Exception as e:
                 self.logger.exception(f"检查告警时发生异常: {e}")
                 alerts = 0
+                threshold_alerts = 0
 
             # 状态输出
             history_len = 0
@@ -450,8 +555,14 @@ class ConfigurableMonitor:
             # 显示告警状态或等待提示
             if has_any_display:
                 # 告警状态
-                if alerts > 0:
-                    self.logger.info(f"  🚨 已发送 {alerts} 条告警")
+                total_alerts = alerts + threshold_alerts
+                if total_alerts > 0:
+                    alert_details = []
+                    if alerts > 0:
+                        alert_details.append(f"涨跌幅告警 {alerts} 条")
+                    if threshold_alerts > 0:
+                        alert_details.append(f"价格阈值告警 {threshold_alerts} 条")
+                    self.logger.info(f"  🚨 已发送告警: {', '.join(alert_details)}")
                 else:
                     self.logger.info(f"  ✅ 暂无币种触发告警阈值")
 

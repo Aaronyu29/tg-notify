@@ -646,5 +646,49 @@
   "OXTUSDT": {
     "id": "orchid-protocol",
     "timestamp": 1767751665.7775276
+  },
+  "AINUSDT": {
+    "id": null,
+    "timestamp": 1767950885.6139963
+  },
+  "RECALLUSDT": {
+    "id": "recall",
+    "timestamp": 1767950888.6955059
+  },
+  "ZAMAUSDT": {
+    "id": "zama",
+    "timestamp": 1767950891.6569076
+  },
+  "CHESSUSDT": {
+    "id": "tranchess",
+    "timestamp": 1767950894.5858245
+  },
+  "TSTUSDT": {
+    "id": "test-3",
+    "timestamp": 1767950897.6703236
+  },
+  "XMRUSDT": {
+    "id": "monero",
+    "timestamp": 1767950900.5887861
+  },
+  "ANIMEUSDT": {
+    "id": "anime",
+    "timestamp": 1767950903.5729744
+  },
+  "APEUSDT": {
+    "id": "apecoin",
+    "timestamp": 1767950906.5236998
+  },
+  "STBLUSDT": {
+    "id": "stbl",
+    "timestamp": 1767950909.504248
+  },
+  "ALLOUSDT": {
+    "id": "allora",
+    "timestamp": 1767950915.245882
+  },
+  "ARIAUSDT": {
+    "id": "aria-ai",
+    "timestamp": 1767951207.080023
   }
 }

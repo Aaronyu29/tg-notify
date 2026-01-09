@@ -3,6 +3,14 @@
 在这里配置你的告警规则
 """
 
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 加载 .env 文件
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
+
 # ========== 基础配置 ==========
 
 # 采样间隔（秒）- 改为 30 秒以支持 30 秒告警规则
@@ -96,3 +104,48 @@ VERBOSE = True
 
 # Top N 显示数量
 TOP_N_DISPLAY = 5
+
+
+# ========== 价格阈值报警配置 ==========
+
+# 价格阈值规则格式说明：
+# {
+#     "symbol": "币种符号（如 BNBUSDT）",
+#     "threshold": 阈值价格,
+#     "direction": "above" 或 "below",  # above=突破, below=跌破
+#     "priority": "normal" 或 "high" 或 "critical"
+# }
+
+PRICE_THRESHOLD_RULES = [
+    # BNB 跌破 800
+    {
+        "symbol": "BNBUSDT",
+        "threshold": 800.0,
+        "direction": "below",
+        "priority": "high"
+    },
+
+    # 你可以添加更多阈值规则，例如：
+
+    # BTC 突破 100000
+    # {
+    #     "symbol": "BTCUSDT",
+    #     "threshold": 100000.0,
+    #     "direction": "above",
+    #     "priority": "high"
+    # },
+
+    # ETH 跌破 3000
+    # {
+    #     "symbol": "ETHUSDT",
+    #     "threshold": 3000.0,
+    #     "direction": "below",
+    #     "priority": "high"
+    # },
+]
+
+# 价格阈值报警冷却时间（秒）- 防止频繁报警
+PRICE_THRESHOLD_COOLDOWN = 3600  # 1小时
+
+# 价格阈值报警专用 Webhook URL（可选，不配置则使用 FWALERT_URL）
+PRICE_THRESHOLD_WEBHOOK_URL = os.getenv("PRICE_THRESHOLD_WEBHOOK_URL", "")
