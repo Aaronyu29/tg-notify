@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Any, Callable, Optional
 from datetime import datetime
 from dotenv import load_dotenv
+from logger import Logger
 
 # 设置 Windows 控制台编码为 UTF-8
 if sys.platform == 'win32':
@@ -74,14 +75,15 @@ class AlertGenerator:
         """
         self.fwalert_url = fwalert_url or FWALERT_URL
         self.rules = []
+        self.logger = Logger(name="alert_generator", keep_hours=24)
 
         if not self.fwalert_url:
-            print("⚠️  警告: FWALERT_URL 未配置，请在 .env 中设置或初始化时传入")
+            self.logger.warning("⚠️  警告: FWALERT_URL 未配置，请在 .env 中设置或初始化时传入")
 
     def add_rule(self, rule: AlertRule):
         """添加规则"""
         self.rules.append(rule)
-        print(f"✓ 已添加规则: {rule.name}")
+        self.logger.info(f"✓ 已添加规则: {rule.name}")
 
     def check_and_alert(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -116,9 +118,9 @@ class AlertGenerator:
                 })
 
                 if success:
-                    print(f"✓ [{rule.name}] 告警已发送")
+                    self.logger.info(f"✓ [{rule.name}] 告警已发送")
                 else:
-                    print(f"✗ [{rule.name}] 告警发送失败")
+                    self.logger.error(f"✗ [{rule.name}] 告警发送失败")
 
         return results
 
@@ -158,13 +160,13 @@ class AlertGenerator:
                 )
                 fwalert_success = response.status_code == 200
                 if fwalert_success:
-                    print("✓ FWAlert 发送成功")
+                    self.logger.info("✓ FWAlert 发送成功")
                 else:
-                    print(f"✗ FWAlert 发送失败: HTTP {response.status_code}")
+                    self.logger.error(f"✗ FWAlert 发送失败: HTTP {response.status_code}")
             except Exception as e:
-                print(f"✗ FWAlert 发送失败: {e}")
+                self.logger.error(f"✗ FWAlert 发送失败: {e}")
         else:
-            print("⚠️  FWAlert URL 未配置，跳过")
+            self.logger.warning("⚠️  FWAlert URL 未配置，跳过")
 
         # 2. 发送到 Telegram (通过本地 notify server)
         try:
@@ -209,17 +211,17 @@ class AlertGenerator:
             telegram_success = notify(
                 title=title,
                 message=msg,
-                channel="price",
+                channel="alert",  # 修改为 alert，避免与 price 字段冲突
                 priority="high"
             )
 
             if telegram_success:
-                print("✓ Telegram 发送成功")
+                self.logger.info("✓ Telegram 发送成功")
             else:
-                print("✗ Telegram 发送失败")
+                self.logger.error("✗ Telegram 发送失败")
 
         except Exception as e:
-            print(f"✗ Telegram 发送失败: {e}")
+            self.logger.error(f"✗ Telegram 发送失败: {e}")
 
         # 只要有一个成功就返回 True
         return fwalert_success or telegram_success

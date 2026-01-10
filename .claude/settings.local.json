@@ -6,7 +6,9 @@
       "Bash(get-output:*)",
       "Bash(dir:*)",
       "Bash(nul)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "mcp__ide",
+      "Skill(zcf:git-commit-push)"
     ],
     "deny": [],
     "ask": []

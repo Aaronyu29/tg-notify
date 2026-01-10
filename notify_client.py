@@ -53,7 +53,7 @@ def notify(
                 "priority": priority
             },
             headers={"X-API-Key": API_KEY},
-            timeout=10
+            timeout=30  # 增加到 30 秒，避免 Telegram API 超时
         )
         return resp.status_code == 200
     except Exception as e:
