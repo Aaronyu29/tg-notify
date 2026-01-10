@@ -117,6 +117,22 @@ TOP_N_DISPLAY = 5
 # }
 
 PRICE_THRESHOLD_RULES = [
+    # SOL 跌破 136.1（测试）
+    {
+        "symbol": "SOLUSDT",
+        "threshold": 136.1,
+        "direction": "below",
+        "priority": "high"
+    },
+
+    # SOL 突破 136.4（测试）
+    {
+        "symbol": "SOLUSDT",
+        "threshold": 136.4,
+        "direction": "above",
+        "priority": "high"
+    },
+
     # BNB 跌破 800
     {
         "symbol": "BNBUSDT",

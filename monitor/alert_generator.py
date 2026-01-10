@@ -124,41 +124,105 @@ class AlertGenerator:
 
     def send_alert(self, message) -> bool:
         """
-        发送告警到 FWAlert
+        发送告警到 FWAlert 和 Telegram
 
         Args:
             message: 告警消息 (str 或 dict)
 
         Returns:
-            是否发送成功
+            是否至少有一个渠道发送成功
         """
-        if not self.fwalert_url:
-            print("✗ 无法发送告警: FWALERT_URL 未配置")
-            return False
+        fwalert_success = False
+        telegram_success = False
 
+        # 1. 发送到 FWAlert
+        if self.fwalert_url:
+            try:
+                # 如果 message 是字符串，尝试解析为 JSON
+                if isinstance(message, str):
+                    try:
+                        import json
+                        payload = json.loads(message)
+                    except json.JSONDecodeError:
+                        # 如果不是 JSON，则包装为 {"message": ...}
+                        payload = {"message": message}
+                else:
+                    # 如果已经是 dict，直接使用
+                    payload = message
+
+                response = requests.post(
+                    self.fwalert_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=10
+                )
+                fwalert_success = response.status_code == 200
+                if fwalert_success:
+                    print("✓ FWAlert 发送成功")
+                else:
+                    print(f"✗ FWAlert 发送失败: HTTP {response.status_code}")
+            except Exception as e:
+                print(f"✗ FWAlert 发送失败: {e}")
+        else:
+            print("⚠️  FWAlert URL 未配置，跳过")
+
+        # 2. 发送到 Telegram (通过本地 notify server)
         try:
-            # 如果 message 是字符串，尝试解析为 JSON
+            # 导入 notify_client（在父目录）
+            parent_dir = Path(__file__).parent.parent
+            if str(parent_dir) not in sys.path:
+                sys.path.insert(0, str(parent_dir))
+
+            from notify_client import notify
+
+            # 解析消息内容
             if isinstance(message, str):
                 try:
                     import json
-                    payload = json.loads(message)
+                    data = json.loads(message)
                 except json.JSONDecodeError:
-                    # 如果不是 JSON，则包装为 {"message": ...}
-                    payload = {"message": message}
+                    data = {"message": message}
             else:
-                # 如果已经是 dict，直接使用
-                payload = message
+                data = message
 
-            response = requests.post(
-                self.fwalert_url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                timeout=10
+            # 构建 Telegram 消息
+            if data.get("type") == "price_threshold":
+                # 价格阈值报警
+                symbol = data.get('symbol', '未知')
+                direction = data.get('direction', '')
+                threshold = data.get('thresholdValue', data.get('threshold', ''))
+                current_price = data.get('currentPriceValue', data.get('price', ''))
+
+                title = f"🚨 价格阈值报警"
+                msg = f"{symbol} {direction} ${threshold}\n当前价格: ${current_price}"
+            else:
+                # 涨跌幅报警
+                symbol = data.get("symbol", "未知")
+                change_percent = data.get("changePercent", "")
+                current_price = data.get("currentPriceValue", "")
+                before_price = data.get("beforePriceValue", "")
+
+                title = f"📊 {symbol} 价格变动"
+                msg = f"涨跌幅: {change_percent}%\n当前价格: ${current_price}\n之前价格: ${before_price}"
+
+            # 发送到 Telegram
+            telegram_success = notify(
+                title=title,
+                message=msg,
+                channel="price",
+                priority="high"
             )
-            return response.status_code == 200
+
+            if telegram_success:
+                print("✓ Telegram 发送成功")
+            else:
+                print("✗ Telegram 发送失败")
+
         except Exception as e:
-            print(f"✗ 发送告警失败: {e}")
-            return False
+            print(f"✗ Telegram 发送失败: {e}")
+
+        # 只要有一个成功就返回 True
+        return fwalert_success or telegram_success
 
     def generate_curl_command(self, message: str) -> str:
         """

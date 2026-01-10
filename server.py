@@ -341,21 +341,27 @@ def run_telegram_polling():
 
 
 if __name__ == "__main__":
+    # 设置 UTF-8 编码（Windows 兼容）
+    import sys
+    if sys.platform == "win32":
+        import codecs
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+
     if not BOT_TOKEN or not CHAT_ID:
-        print("❌ 错误: 请先配置 .env 文件")
+        print("错误: 请先配置 .env 文件")
         print("   复制 .env.example 为 .env 并填写配置")
         exit(1)
-    
+
     print("=" * 60)
     print("  TG Notify Server v2.0 - 支持电话告警")
     print("=" * 60)
     print(f"  Bot Token: {BOT_TOKEN[:20]}...")
     print(f"  Chat ID: {CHAT_ID}")
     print(f"  端口: {PORT}")
-    print(f"  Twilio: {'✓ 已配置' if twilio_client else '✗ 未配置'}")
+    print(f"  Twilio: {'已配置' if twilio_client else '未配置'}")
     print(f"  电话延迟: {CALL_DELAY_SECONDS} 秒")
     print("-" * 60)
-    print(f"  📡 TradingView Webhook:")
+    print(f"  TradingView Webhook:")
     print(f"     http://81.92.219.140/webhook/{WEBHOOK_SECRET}")
     print("=" * 60)
     

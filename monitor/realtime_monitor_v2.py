@@ -252,13 +252,18 @@ class ConfigurableMonitor:
                 # 检查规则是否触发
                 for rule in self.alert_generator.rules:
                     if rule.name == rule_name and rule.check(data):
-                        # 构建精简的 JSON 消息
+                        # 构建精简的 JSON 消息（包含中文和数字两种格式）
                         symbol_short = symbol.replace("USDT", "")
                         message = {
+                            # 中文格式（用于 FWAlert）
                             "upOrDown": number_to_chinese(change_percent, is_percent=True),
                             "symbol": symbol_short,
                             "currentPrice": price_to_chinese(current_price),
-                            "beforePrice": price_to_chinese(old_price)
+                            "beforePrice": price_to_chinese(old_price),
+                            # 数字格式（用于 Telegram）
+                            "changePercent": f"{change_percent:+.2f}",
+                            "currentPriceValue": f"{current_price:.2f}",
+                            "beforePriceValue": f"{old_price:.2f}"
                         }
 
                         # 转换为 JSON 字符串并发送
@@ -320,7 +325,7 @@ class ConfigurableMonitor:
                 self.threshold_triggered[key] = True
                 self.threshold_cooldowns[key] = time.time()
 
-                # 构建报警消息
+                # 构建报警消息（包含中文和数字两种格式）
                 symbol_short = symbol.replace("USDT", "")
                 direction_text = "突破" if direction == "above" else "跌破"
 
@@ -328,8 +333,12 @@ class ConfigurableMonitor:
                     "type": "price_threshold",
                     "symbol": symbol_short,
                     "direction": direction_text,
+                    # 中文格式（用于 FWAlert）
                     "threshold": price_to_chinese(threshold),
-                    "currentPrice": price_to_chinese(current_price)
+                    "currentPrice": price_to_chinese(current_price),
+                    # 数字格式（用于 Telegram）
+                    "thresholdValue": f"{threshold:.2f}",
+                    "currentPriceValue": f"{current_price:.2f}"
                 }
 
                 # 转换为 JSON 字符串并发送
