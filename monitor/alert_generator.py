@@ -19,8 +19,8 @@ if sys.platform == 'win32':
     except:
         pass
 
-# 加载 .env 文件
-env_path = Path(__file__).parent / ".env"
+# 加载根目录的 .env 文件
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
 # ========== 配置 ==========

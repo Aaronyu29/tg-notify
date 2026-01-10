@@ -7,8 +7,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 加载 .env 文件
-env_path = Path(__file__).parent / ".env"
+# 加载根目录的 .env 文件
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
 # ========== 基础配置 ==========
@@ -117,146 +117,18 @@ TOP_N_DISPLAY = 5
 # }
 
 PRICE_THRESHOLD_RULES = [
-    # SOL 跌破 136.28
+    # SOL 跌破 125
     {
         "symbol": "SOLUSDT",
-        "threshold": 136.19,
+        "threshold": 125,
         "direction": "below",
         "priority": "high"
     },
 
-    # SOL 突破 136.34
+    # SOL 突破 148
     {
         "symbol": "SOLUSDT",
-        "threshold": 136.24,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.35
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.26,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.36
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.28,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.37
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.37,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.38
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.38,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.39
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.39,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.40
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.40,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.41
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.41,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.42
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.42,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.43
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.43,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.44
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.44,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.45
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.45,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.46
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.46,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.47
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.47,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.48
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.48,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.49
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.49,
-        "direction": "above",
-        "priority": "high"
-    },
-
-    # SOL 突破 136.50
-    {
-        "symbol": "SOLUSDT",
-        "threshold": 136.50,
+        "threshold": 148,
         "direction": "above",
         "priority": "high"
     },

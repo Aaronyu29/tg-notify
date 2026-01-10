@@ -690,5 +690,125 @@
   "ARIAUSDT": {
     "id": "aria-ai",
     "timestamp": 1767951207.080023
+  },
+  "ZRXUSDT": {
+    "id": "0x",
+    "timestamp": 1767966519.6793845
+  },
+  "CVXUSDT": {
+    "id": "convex-finance",
+    "timestamp": 1767966522.6415782
+  },
+  "RIFUSDT": {
+    "id": "rif-token",
+    "timestamp": 1767966525.649824
+  },
+  "RONINUSDT": {
+    "id": null,
+    "timestamp": 1767966528.6452374
+  },
+  "CAKEUSDT": {
+    "id": "pancakeswap-token",
+    "timestamp": 1767966531.659075
+  },
+  "PUMPUSDT": {
+    "id": "pump-fun",
+    "timestamp": 1767966542.946441
+  },
+  "FETUSDT": {
+    "id": "fetch-ai",
+    "timestamp": 1767966849.008799
+  },
+  "EULUSDT": {
+    "id": "euler",
+    "timestamp": 1767966851.9690711
+  },
+  "MUBARAKUSDT": {
+    "id": "mubarak",
+    "timestamp": 1767966854.8274322
+  },
+  "币安人生USDT": {
+    "id": "bianrensheng",
+    "timestamp": 1768051988.6622794
+  },
+  "STXUSDT": {
+    "id": "blockstack",
+    "timestamp": 1768051991.2774022
+  },
+  "ENSUSDT": {
+    "id": "ethereum-name-service",
+    "timestamp": 1768051993.9711971
+  },
+  "AUSDT": {
+    "id": null,
+    "timestamp": 1768052872.4761617
+  },
+  "STRKUSDT": {
+    "id": "starknet",
+    "timestamp": 1768052875.547651
+  },
+  "CUSDT": {
+    "id": null,
+    "timestamp": 1768052879.0758233
+  },
+  "REZUSDT": {
+    "id": "renzo",
+    "timestamp": 1768052882.381254
+  },
+  "ZKCUSDT": {
+    "id": "boundless",
+    "timestamp": 1768052885.4192948
+  },
+  "LAYERUSDT": {
+    "id": "solayer",
+    "timestamp": 1768052888.3855557
+  },
+  "VICUSDT": {
+    "id": "tomochain",
+    "timestamp": 1768053886.2027597
+  },
+  "TANSSIUSDT": {
+    "id": "tanssi",
+    "timestamp": 1768053888.836115
+  },
+  "VELVETUSDT": {
+    "id": "velvet",
+    "timestamp": 1768053891.4691803
+  },
+  "1000000BOBUSDT": {
+    "id": null,
+    "timestamp": 1768053894.1018798
+  },
+  "DAMUSDT": {
+    "id": "reservoir",
+    "timestamp": 1768053896.7469513
+  },
+  "SWARMSUSDT": {
+    "id": "swarms",
+    "timestamp": 1768054530.6786382
+  },
+  "ETHWUSDT": {
+    "id": "ethereum-pow-iou",
+    "timestamp": 1768054533.273176
+  },
+  "FOGOUSDT": {
+    "id": "fogo",
+    "timestamp": 1768054535.7835224
+  },
+  "SAHARAUSDT": {
+    "id": "sahara-ai",
+    "timestamp": 1768054542.8186247
+  },
+  "HIGHUSDT": {
+    "id": "high",
+    "timestamp": 1768054545.4428172
+  },
+  "QNTUSDT": {
+    "id": "quant-network",
+    "timestamp": 1768054791.2584074
+  },
+  "STABLEUSDT": {
+    "id": "stable-2",
+    "timestamp": 1768054793.9156363
   }
 }
