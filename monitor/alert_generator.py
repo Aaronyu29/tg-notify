@@ -188,7 +188,72 @@ class AlertGenerator:
                 data = message
 
             # 构建 Telegram 消息
-            if data.get("type") == "price_threshold":
+            if data.get("type") == "trading_decision":
+                # 交易决策报警（新格式）
+                # 原有字段在外层，新增字段在内层
+                symbol = data.get("symbol", "未知")
+                decision_info = data.get("decision", {})
+                trading_plan = data.get("trading_plan", {})
+                momentum_info = data.get("momentum", {})
+                volume_info = data.get("volume", {})
+
+                # 决策建议
+                action = decision_info.get("action", "WATCH")
+                confidence = decision_info.get("confidence", 0)
+                risk_score = decision_info.get("risk_score", 0)
+                reason = decision_info.get("reason", "")
+
+                # 动能状态映射
+                momentum_state_map = {
+                    "accelerating": "加速上涨 ⚡",
+                    "steady_rise": "稳定上涨 📈",
+                    "consolidating": "高位震荡 ⚠️",
+                    "decelerating": "减速回落 📉"
+                }
+                momentum_state = momentum_info.get("state", {})
+                if isinstance(momentum_state, dict):
+                    momentum_text = momentum_state_map.get(momentum_state.get("value", ""), "未知")
+                else:
+                    momentum_text = momentum_state_map.get(str(momentum_state).split(".")[-1], "未知")
+
+
+                action_emoji = "✅ 买入" if action == "BUY" else "⏸️ 观望"
+                title = f"🚨 交易决策建议"
+
+                msg = f"""币种：{symbol}
+涨幅：{data.get('changePercent', '')}% ({data.get('window', '')})
+当前价格：${data.get('currentPriceValue', '')}
+
+━━━━━━━━━━━━━━━━
+📊 决策分析
+
+{action_emoji} 建议：{action}
+置信度：{confidence}/100
+风险评分：{risk_score}/100
+
+理由：{reason}
+
+━━━━━━━━━━━━━━━━
+📈 交易计划
+
+入场价：${trading_plan.get('entry_price', '')}
+止损价：${trading_plan.get('stop_loss', '')}
+止盈价：${trading_plan.get('take_profit', '')}
+
+━━━━━━━━━━━━━━━━
+📉 详细指标
+
+动能状态：{momentum_text}
+交易量变化：{volume_info.get('volume_change_rate', 0):.1f}% (1分钟)
+异常放量：{'是 🔥' if volume_info.get('is_abnormal_surge', False) else '否'}
+
+━━━━━━━━━━━━━━━━
+⚠️ 风险提示
+
+本建议仅供参考，请自行判断
+建议设置止损，控制风险"""
+
+            elif data.get("type") == "price_threshold":
                 # 价格阈值报警
                 symbol = data.get('symbol', '未知')
                 direction = data.get('direction', '')
@@ -198,7 +263,7 @@ class AlertGenerator:
                 title = f"🚨 价格阈值报警"
                 msg = f"{symbol} {direction} ${threshold}\n当前价格: ${current_price}"
             else:
-                # 涨跌幅报警
+                # 涨跌幅报警（旧格式兼容）
                 symbol = data.get("symbol", "未知")
                 change_percent = data.get("changePercent", "")
                 current_price = data.get("currentPriceValue", "")

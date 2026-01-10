@@ -810,5 +810,49 @@
   "STABLEUSDT": {
     "id": "stable-2",
     "timestamp": 1768054793.9156363
+  },
+  "HIPPOUSDT": {
+    "id": "sudeng",
+    "timestamp": 1768055377.4524636
+  },
+  "MOVRUSDT": {
+    "id": "moonriver",
+    "timestamp": 1768055380.289856
+  },
+  "GRIFFAINUSDT": {
+    "id": "griffain",
+    "timestamp": 1768055383.1762688
+  },
+  "ZKJUSDT": {
+    "id": "polyhedra-network",
+    "timestamp": 1768055385.781509
+  },
+  "GALAUSDT": {
+    "id": "gala",
+    "timestamp": 1768055388.4555838
+  },
+  "LINEAUSDT": {
+    "id": "linea",
+    "timestamp": 1768055401.2417014
+  },
+  "BDXNUSDT": {
+    "id": "bondex",
+    "timestamp": 1768055403.977463
+  },
+  "TUSDT": {
+    "id": null,
+    "timestamp": 1768055680.5057955
+  },
+  "1INCHUSDT": {
+    "id": "1inch",
+    "timestamp": 1768055683.1117115
+  },
+  "FHEUSDT": {
+    "id": "mind-network",
+    "timestamp": 1768055685.7212899
+  },
+  "GMTUSDT": {
+    "id": "stepn",
+    "timestamp": 1768055688.2567942
   }
 }

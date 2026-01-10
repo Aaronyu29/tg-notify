@@ -165,3 +165,27 @@ PRICE_THRESHOLD_COOLDOWN = 3600  # 1小时
 
 # 价格阈值报警专用 Webhook URL（可选，不配置则使用 FWALERT_URL）
 PRICE_THRESHOLD_WEBHOOK_URL = os.getenv("PRICE_THRESHOLD_WEBHOOK_URL", "")
+
+
+# ========== 交易决策引擎配置 ==========
+
+# 决策阈值
+DECISION_CONFIDENCE_THRESHOLD = 70  # 置信度阈值（0-100）
+DECISION_RISK_THRESHOLD = 50        # 风险阈值（0-100）
+
+# 交易计划参数
+ENTRY_PREMIUM = 0.005   # 入场价溢价（0.5%）
+STOP_LOSS_RATIO = 0.92  # 止损比例（-8%）
+TAKE_PROFIT_RATIO = 1.20  # 止盈比例（+20%）
+
+# 市值分级（美元）
+MARKET_CAP_LARGE = 1e9   # 10亿美元
+MARKET_CAP_MEDIUM = 1e8  # 1亿美元
+MARKET_CAP_SMALL = 1e7   # 1000万美元
+
+# 动能检测参数
+MOMENTUM_VOLATILITY_THRESHOLD = 0.03  # 波动率阈值（3%）
+MOMENTUM_DRAWDOWN_THRESHOLD = 0.02    # 回撤阈值（2%）
+
+# 交易量异常倍数
+VOLUME_SURGE_MULTIPLIER = 3.0  # 异常放量倍数

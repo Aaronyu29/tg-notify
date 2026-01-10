@@ -37,6 +37,9 @@ from chinese_converter import (
 )
 from logger import Logger
 from coingecko_client import CoinGeckoClient
+from momentum_detector import MomentumDetector
+from volume_tracker import VolumeTracker
+from decision_engine import TradingDecisionEngine
 
 
 # ========== 数据结构 ==========
@@ -95,6 +98,15 @@ class ConfigurableMonitor:
         self.coingecko = CoinGeckoClient()
         self.market_data = {}  # 存储市值数据
         self.last_market_update = 0
+
+        # 创建交易决策引擎
+        self.momentum_detector = MomentumDetector(sample_interval=SAMPLE_INTERVAL)
+        self.volume_tracker = VolumeTracker()
+        self.decision_engine = TradingDecisionEngine(
+            self.momentum_detector,
+            self.volume_tracker
+        )
+        self.logger.info("✓ 交易决策引擎已初始化")
 
         # 添加规则
         self._setup_rules()
@@ -161,6 +173,10 @@ class ConfigurableMonitor:
             history = self._get_or_create_history(symbol)
             volume = self.latest_volumes.get(symbol, 0.0)
             history.append(PricePoint(timestamp=now, price=price, volume=volume))
+
+            # 更新交易量快照（用于决策引擎）
+            self.volume_tracker.update_snapshot(symbol, volume)
+
             sampled_count += 1
 
         self.last_sample_time = now
@@ -252,19 +268,80 @@ class ConfigurableMonitor:
                 # 检查规则是否触发
                 for rule in self.alert_generator.rules:
                     if rule.name == rule_name and rule.check(data):
-                        # 构建精简的 JSON 消息（包含中文和数字两种格式）
+                        # 尝试生成交易决策（如果失败，仍然发送基础告警）
+                        decision = None
+                        try:
+                            # 获取市值数据
+                            market_data = self.market_data.get(symbol, {})
+                            if not market_data:
+                                # 尝试获取市值数据
+                                try:
+                                    market_data = self.coingecko.get_market_data(symbol)
+                                    self.market_data[symbol] = market_data
+                                except Exception as e:
+                                    self.logger.debug(f"无法获取 {symbol} 市值数据: {e}")
+                                    market_data = {}
+
+                            # 添加24h交易量作为备用指标（从 WebSocket 数据获取）
+                            if "volume_24h" not in market_data or not market_data.get("volume_24h"):
+                                volume_24h = self.latest_volumes.get(symbol, 0)
+                                market_data["volume_24h"] = volume_24h
+
+                            # 使用决策引擎生成交易建议
+                            decision = self.decision_engine.make_decision(
+                                symbol=symbol,
+                                alert_data=data,
+                                price_history=self.price_history[symbol],
+                                market_data=market_data
+                            )
+                        except Exception as e:
+                            self.logger.error(f"决策引擎失败 {symbol}: {e}")
+                            decision = None
+
+                        # 构建消息（根据是否有决策数据选择格式）
                         symbol_short = symbol.replace("USDT", "")
-                        message = {
-                            # 中文格式（用于 FWAlert）
-                            "upOrDown": number_to_chinese(change_percent, is_percent=True),
-                            "symbol": symbol_short,
-                            "currentPrice": price_to_chinese(current_price),
-                            "beforePrice": price_to_chinese(old_price),
-                            # 数字格式（用于 Telegram）
-                            "changePercent": f"{change_percent:+.2f}",
-                            "currentPriceValue": f"{current_price:.2f}",
-                            "beforePriceValue": f"{old_price:.2f}"
-                        }
+
+                        if decision:
+                            # 有决策数据：发送增强消息
+                            message = {
+                                # 原有字段（外层，保持兼容）
+                                "type": "trading_decision",
+                                "symbol": symbol_short,
+                                "upOrDown": number_to_chinese(change_percent, is_percent=True),
+                                "changePercent": f"{change_percent:+.2f}",
+                                "currentPrice": price_to_chinese(current_price),
+                                "currentPriceValue": f"{current_price:.8f}",
+                                "beforePrice": price_to_chinese(old_price),
+                                "beforePriceValue": f"{old_price:.8f}",
+                                "window": f"{window}分钟" if window >= 1 else f"{int(window*60)}秒",
+                                # 新增决策建议
+                                "decision": {
+                                    "action": decision["action"],
+                                    "confidence": decision["confidence"],
+                                    "risk_score": decision["risk_score"],
+                                    "reason": decision["reason"]
+                                },
+                                # 新增交易计划
+                                "trading_plan": {
+                                    "entry_price": f"{decision['entry_price']:.8f}",
+                                    "stop_loss": f"{decision['stop_loss']:.8f}",
+                                    "take_profit": f"{decision['take_profit']:.8f}"
+                                },
+                                # 详细指标
+                                "momentum": decision["details"].get("momentum", {}),
+                                "volume": decision["details"].get("volume", {})
+                            }
+                        else:
+                            # 无决策数据：发送基础告警（保持原有功能）
+                            message = {
+                                "symbol": symbol_short,
+                                "upOrDown": number_to_chinese(change_percent, is_percent=True),
+                                "changePercent": f"{change_percent:+.2f}",
+                                "currentPrice": price_to_chinese(current_price),
+                                "currentPriceValue": f"{current_price:.8f}",
+                                "beforePrice": price_to_chinese(old_price),
+                                "beforePriceValue": f"{old_price:.8f}"
+                            }
 
                         # 转换为 JSON 字符串并发送
                         message_json = json.dumps(message, ensure_ascii=False)
@@ -274,9 +351,13 @@ class ConfigurableMonitor:
                             alerts_sent += 1
                             # 成功发送后才设置冷却时间
                             self._set_alert_cooldown(symbol, rule_name)
-                            self.logger.info(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name}")
-                            if VERBOSE:
-                                self.logger.debug(f"告警详情: {message_json}")
+                            if decision:
+                                action_emoji = "✅ 买入" if decision["action"] == "BUY" else "⏸️ 观望"
+                                self.logger.info(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name} | {action_emoji} (置信度:{decision['confidence']})")
+                                if VERBOSE:
+                                    self.logger.debug(f"决策理由: {decision['reason']}")
+                            else:
+                                self.logger.info(f"[ALERT] {symbol}: {change_percent:+.2f}% - {rule_name} (基础告警)")
                         else:
                             self.logger.error(f"[ALERT FAILED] {symbol}: {change_percent:+.2f}% - {rule_name}")
 
